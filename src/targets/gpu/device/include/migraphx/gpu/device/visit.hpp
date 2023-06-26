@@ -29,7 +29,8 @@
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu::device {
+namespace gpu {
+namespace device {
 
 template <class F>
 constexpr void visit_tensor_size(index_int n, F f)
@@ -232,6 +233,7 @@ auto hip_visit_views(T&& x, Ts&&... xs)
     };
 }
 
+} // namespace device
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

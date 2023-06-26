@@ -32,7 +32,8 @@
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu::device {
+namespace gpu {
+namespace device {
 
 #ifdef MIGRAPHX_NO_DPP
 
@@ -302,6 +303,7 @@ void reduce(hipStream_t stream,
     }
 }
 
+} // namespace device
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

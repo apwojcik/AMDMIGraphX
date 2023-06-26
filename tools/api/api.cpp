@@ -38,25 +38,25 @@
 #include <migraphx/register_op.hpp>
 #include <migraphx/json.hpp>
 #include <migraphx/convert_to_json.hpp>
+#include <array>
 #include <algorithm>
 #include <cstdarg>
-namespace migraphx {
 
-#ifdef BUILD_DEV
-
+#ifdef MIGRAPHX_BUILD_TESTING
 static thread_local bool disable_exception_catch = false; // NOLINT
 
-MIGRAPHX_C_EXPORT void migraphx_test_private_disable_exception_catch(bool b)
+extern "C" MIGRAPHX_C_EXPORT void migraphx_test_private_disable_exception_catch(bool b)
 {
     disable_exception_catch = b;
 }
-
 #endif
+
+namespace migraphx {
 
 template <class F>
 migraphx_status try_(F f, bool output = true) // NOLINT
 {
-#ifdef BUILD_DEV
+#ifdef MIGRAPHX_BUILD_TESTING
     if(disable_exception_catch)
     {
         f();
@@ -87,10 +87,10 @@ migraphx_status try_(F f, bool output = true) // NOLINT
         {
             return migraphx_status_unknown_error;
         }
-#ifdef BUILD_DEV
+#ifdef MIGRAPHX_BUILD_TESTING
     }
-    return migraphx_status_success;
 #endif
+    return migraphx_status_success;
 }
 
 shape::type_t to_shape_type(migraphx_shape_datatype_t t)

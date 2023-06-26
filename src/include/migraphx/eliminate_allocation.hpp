@@ -37,12 +37,12 @@ struct module;
  * Remove memory allocations. This will create a parameter which is the max of all memory used in
  * the program.
  */
-struct eliminate_allocation
+struct MIGRAPHX_EXPORT eliminate_allocation
 {
     std::string allocation_op{};
     std::size_t alignment = 32;
     std::string name() const { return "eliminate_allocation"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

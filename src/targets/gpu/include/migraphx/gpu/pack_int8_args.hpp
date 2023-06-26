@@ -25,7 +25,6 @@
 #define MIGRAPHX_GUARD_RTGLIB_PACK_INT8_ARGS_HPP
 
 #include <migraphx/program.hpp>
-#include <migraphx/config.hpp>
 #include <migraphx/gpu/context.hpp>
 
 namespace migraphx {
@@ -33,11 +32,11 @@ inline namespace MIGRAPHX_INLINE_NS {
 
 namespace gpu {
 
-struct pack_int8_args
+struct MIGRAPHX_GPU_EXPORT pack_int8_args
 {
     std::string name() const { return "gpu::pack_int8_args"; }
-    MIGRAPHX_GPU_EXPORT void apply(module& m) const;
-    MIGRAPHX_GPU_EXPORT static shape pack_int8_shape(const shape& s);
+    void apply(module& m) const;
+    shape pack_int8_shape(const shape& s) const;
 };
 
 } // namespace gpu

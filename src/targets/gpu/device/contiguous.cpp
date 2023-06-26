@@ -22,13 +22,13 @@
  * THE SOFTWARE.
  */
 
-#define MIGRAPHX_STATIC_DEFINE
 #include <migraphx/gpu/device/contiguous.hpp>
 #include <migraphx/gpu/device/nary.hpp>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu::device {
+namespace gpu {
+namespace device {
 
 void contiguous_nonstandard(hipStream_t stream, const argument& result, const argument& arg)
 {
@@ -59,6 +59,7 @@ void contiguous(hipStream_t stream, const argument& result, const argument& arg)
         contiguous_nonstandard(stream, result, arg);
 }
 
+} // namespace device
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

@@ -53,7 +53,8 @@
 
 #include <fstream>
 
-namespace migraphx::driver {
+namespace migraphx {
+namespace driver {
 inline namespace MIGRAPHX_INLINE_NS {
 
 struct loader
@@ -773,6 +774,7 @@ struct main_command
 };
 
 } // namespace MIGRAPHX_INLINE_NS
+} // namespace driver
 } // namespace migraphx
 
 using namespace migraphx::driver; // NOLINT

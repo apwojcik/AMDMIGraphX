@@ -24,12 +24,10 @@
 #ifndef MIGRAPHX_GUARD_RTGLIB_PACK_ARGS_HPP
 #define MIGRAPHX_GUARD_RTGLIB_PACK_ARGS_HPP
 
+#include <migraphx/gpu/config.hpp>
+#include <migraphx/requires.hpp>
 #include <utility>
 #include <vector>
-
-#include <migraphx/config.hpp>
-#include <migraphx/requires.hpp>
-#include <migraphx/gpu/export.h>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {

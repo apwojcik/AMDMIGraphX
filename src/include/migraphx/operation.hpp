@@ -497,7 +497,7 @@ lifetime get_lifetime_op(const T&)
 #ifdef TYPE_ERASED_DECLARATION
 
 // Type-erased interface for:
-struct operation
+struct MIGRAPHX_EXPORT operation
 {
     //
     std::string name() const;

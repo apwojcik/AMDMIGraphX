@@ -21,8 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-#define MIGRAPHX_STATIC_DEFINE
 #include <migraphx/gpu/device/nonzero.hpp>
 #include <migraphx/gpu/device/float_equal.hpp>
 #include <migraphx/gpu/device/scan.hpp>
@@ -30,7 +28,8 @@
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu::device {
+namespace gpu {
+namespace device {
 
 argument nonzero(hipStream_t stream, const argument& result, const argument& arg_data)
 {
@@ -72,6 +71,7 @@ argument nonzero(hipStream_t stream, const argument& result, const argument& arg
     return result;
 }
 
+} // namespace device
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

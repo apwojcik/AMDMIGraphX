@@ -29,7 +29,8 @@
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu::device {
+namespace gpu {
+namespace device {
 
 template <class T, index_int N>
 struct hip_tensor_view
@@ -73,6 +74,7 @@ hip_tensor_view<T, N> make_hip_view(tensor_view<T> x)
     return {x};
 }
 
+} // namespace device
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

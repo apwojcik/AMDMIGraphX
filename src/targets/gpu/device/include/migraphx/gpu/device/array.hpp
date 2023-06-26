@@ -29,7 +29,8 @@
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu::device {
+namespace gpu {
+namespace device {
 
 // NOLINTNEXTLINE
 #define MIGRAPHX_DEVICE_ARRAY_OP(op, binary_op)                                                    \
@@ -176,6 +177,7 @@ struct hip_array
     }
 };
 
+} // namespace device
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

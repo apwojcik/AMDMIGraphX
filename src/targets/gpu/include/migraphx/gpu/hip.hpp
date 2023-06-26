@@ -24,8 +24,7 @@
 #ifndef MIGRAPHX_GUARD_MIGRAPHLIB_HIP_HPP
 #define MIGRAPHX_GUARD_MIGRAPHLIB_HIP_HPP
 
-#include <migraphx/config.hpp>
-#include <migraphx/gpu/export.h>
+#include <migraphx/gpu/config.hpp>
 #include <migraphx/argument.hpp>
 #include <migraphx/literal.hpp>
 #include <migraphx/check_shapes.hpp>
@@ -188,7 +187,8 @@ struct hip_copy
     std::ptrdiff_t output_alias(const std::vector<shape>&) const { return 1; }
 };
 
-void store_preallocated_param(context& ctx, const std::string& id, const argument& a);
+MIGRAPHX_GPU_EXPORT void
+store_preallocated_param(context& ctx, const std::string& id, const argument& a);
 
 struct hip_allocate_memory
 {

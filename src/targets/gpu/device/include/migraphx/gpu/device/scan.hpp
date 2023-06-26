@@ -30,7 +30,8 @@
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu::device {
+namespace gpu {
+namespace device {
 
 template <index_int N,
           class Op,
@@ -81,6 +82,7 @@ constexpr auto reverse_scan(index_int n, F f)
     return [=](auto i, auto&&... xs) { return f(n - i - 1, xs...); };
 }
 
+} // namespace device
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

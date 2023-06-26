@@ -22,10 +22,6 @@
  * THE SOFTWARE.
  */
 #include <test.hpp>
-
-#define MIGRAPHX_STATIC_DEFINE
-#define MIGRAPHX_GPU_STATIC_DEFINE
-
 #include <migraphx/ranges.hpp>
 #include <migraphx/make_op.hpp>
 #include <migraphx/generate.hpp>
@@ -159,7 +155,7 @@ int main() {}
 
 migraphx::src_file make_src_file(const std::string& name, const std::string& content)
 {
-    return { name, content };
+    return {name, content};
 }
 
 TEST_CASE(simple_compile_hip)

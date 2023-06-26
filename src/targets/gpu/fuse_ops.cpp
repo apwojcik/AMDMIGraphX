@@ -21,21 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-#include <set>
-
 #include <migraphx/pass_manager.hpp>
 #include <migraphx/dead_code_elimination.hpp>
 #include <migraphx/gpu/fuse_ops.hpp>
 #include <migraphx/matcher.hpp>
 #include <migraphx/gpu/miopen.hpp>
 #include <migraphx/gpu/device_name.hpp>
+#include <migraphx/gpu/oper.hpp>
 #include <migraphx/gpu/gemm.hpp>
 #include <migraphx/instruction.hpp>
 #include <migraphx/register_op.hpp>
 #include <migraphx/array.hpp>
 #include <migraphx/permutation.hpp>
 #include <migraphx/make_op.hpp>
+#include <cmath>
+#include <set>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -165,7 +165,8 @@ struct fusion
 
 const std::unordered_set<std::string>& get_supported_archs()
 {
-    static std::unordered_set<std::string> supported_archs{"gfx900", "gfx906", "gfx908", "gfx1030"};
+    static std::unordered_set<std::string> supported_archs{
+        "gfx900", "gfx906", "gfx908", "gfx1030", "gfx940"};
     return supported_archs;
 }
 
@@ -181,7 +182,7 @@ MIGRAPHX_PRED_MATCHER(fusable_conv, instruction_ref ins)
     const auto device_name = trim(split_string(get_device_name(), ':').front());
     if(not contains(get_supported_archs(), device_name))
         return false;
-    if(enabled(MIGRAPHX_DISABLE_MIOPEN_FUSION))
+    if(enabled(MIGRAPHX_DISABLE_MIOPEN_FUSION{}))
         return false;
     if(ins->name() != "gpu::convolution")
         return false;

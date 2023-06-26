@@ -30,17 +30,17 @@
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
 
-struct tmp_dir
+struct MIGRAPHX_EXPORT tmp_dir
 {
     fs::path path;
-    MIGRAPHX_EXPORT tmp_dir(const std::string& prefix = "");
+    tmp_dir(const std::string& prefix = "");
 
-    MIGRAPHX_EXPORT void execute(const std::string& exe, const std::string& args) const;
+    void execute(const std::string& exe, const std::string& args) const;
 
     tmp_dir(tmp_dir const&) = delete;
     tmp_dir& operator=(tmp_dir const&) = delete;
 
-    MIGRAPHX_EXPORT ~tmp_dir();
+    ~tmp_dir();
 };
 
 } // namespace MIGRAPHX_INLINE_NS

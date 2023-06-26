@@ -26,7 +26,6 @@
 
 #include <migraphx/argument.hpp>
 #include <migraphx/config.hpp>
-#include <migraphx/device/export.h>
 #include <hip/hip_runtime_api.h>
 
 namespace migraphx {
@@ -34,10 +33,8 @@ inline namespace MIGRAPHX_INLINE_NS {
 namespace gpu {
 namespace device {
 
-MIGRAPHX_DEVICE_EXPORT
 void int8_gemm_pack_a(hipStream_t stream, const argument& result, const argument& arg);
 
-MIGRAPHX_DEVICE_EXPORT
 void int8_gemm_pack_b(hipStream_t stream, const argument& result, const argument& arg);
 
 } // namespace device

@@ -34,7 +34,12 @@ template <class PrivateMigraphTypeNameProbe>
 std::string compute_type_name()
 {
     std::string name;
+#if defined(_MSC_VER) && !defined(__clang__)
+    name = typeid(PrivateMigraphTypeNameProbe).name();
+    name = name.substr(7);
+#else
     const char parameter_name[] = "PrivateMigraphTypeNameProbe ="; // NOLINT
+
     name = __PRETTY_FUNCTION__;
 
     auto begin  = name.find(parameter_name) + sizeof(parameter_name);
@@ -44,6 +49,7 @@ std::string compute_type_name()
     auto length = name.find_first_of("];", begin) - begin;
 #endif
     name        = name.substr(begin, length);
+#endif
     return name;
 }
 

@@ -26,7 +26,6 @@
 
 #include <migraphx/argument.hpp>
 #include <migraphx/config.hpp>
-#include <migraphx/device/export.h>
 #include <hip/hip_runtime_api.h>
 
 namespace migraphx {
@@ -34,7 +33,6 @@ inline namespace MIGRAPHX_INLINE_NS {
 namespace gpu {
 namespace device {
 
-MIGRAPHX_DEVICE_EXPORT
 argument topk_smallest(hipStream_t stream,
                        const argument& val_res,
                        const argument& ind_res,
@@ -42,7 +40,6 @@ argument topk_smallest(hipStream_t stream,
                        int64_t k,
                        int64_t axis);
 
-MIGRAPHX_DEVICE_EXPORT
 argument topk_largest(hipStream_t stream,
                       const argument& val_res,
                       const argument& ind_res,

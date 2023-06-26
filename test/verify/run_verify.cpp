@@ -44,11 +44,12 @@ MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_DUMP_TEST)
 
 // An improved async, that doesn't block
 template <class Function>
-std::future<typename std::result_of_t<Function()>> detach_async(Function&& f, bool parallel = true)
+std::future<typename std::result_of<Function()>::type> detach_async(Function&& f,
+                                                                    bool parallel = true)
 {
     if(parallel)
     {
-        using result_type = typename std::result_of_t<Function()>;
+        using result_type = typename std::invoke_result<Function>::type;
         std::packaged_task<result_type()> task(std::forward<Function>(f));
         auto fut = task.get_future();
         std::thread(std::move(task)).detach();
@@ -131,7 +132,7 @@ run_verify::run_target(const migraphx::target& t,
                        const migraphx::compile_options& c_opts) const
 {
     auto_print pp{p, t.name()};
-    auto trace_target = migraphx::string_value_of(MIGRAPHX_TRACE_TEST_COMPILE);
+    auto trace_target = migraphx::string_value_of(MIGRAPHX_TRACE_TEST_COMPILE{});
     compile_check(p, t, c_opts, (trace_target == t.name()));
     migraphx::parameter_map m;
     for(auto&& input : inputs)
@@ -169,7 +170,7 @@ void run_verify::verify(const std::string& name,
     using result_future =
         std::future<std::pair<migraphx::program, std::vector<migraphx::argument>>>;
     auto_print::set_terminate_handler(name);
-    if(migraphx::enabled(MIGRAPHX_DUMP_TEST))
+    if(migraphx::enabled(MIGRAPHX_DUMP_TEST{}))
         migraphx::save(p, name + ".mxr");
     verify_load_save(p);
     std::vector<std::string> target_names;
@@ -232,7 +233,7 @@ void run_verify::verify(const std::string& name,
                 passed &= migraphx::verify_args(tname, gold[i], result[i]);
             }
 
-            if(not passed or migraphx::enabled(MIGRAPHX_TRACE_TEST))
+            if(not passed or migraphx::enabled(MIGRAPHX_TRACE_TEST{}))
             {
                 std::cout << p << std::endl;
                 std::cout << "ref:\n" << p << std::endl;

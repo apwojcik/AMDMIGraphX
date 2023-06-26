@@ -25,17 +25,12 @@
 #include <iostream>
 #include <vector>
 #include <hip/hip_runtime_api.h>
-
-#define MIGRAPHX_STATIC_DEFINE
-#define MIGRAPHX_GPU_STATIC_DEFINE
-
 #include <migraphx/register_target.hpp>
 #include <migraphx/verify.hpp>
-#include <migraphx/gpu/hip.hpp>
-#include <migraphx/make_op.hpp>
-
 #include <test.hpp>
 #include <basic_ops.hpp>
+#include <migraphx/gpu/hip.hpp>
+#include <migraphx/make_op.hpp>
 
 #define MIGRAPHX_HIP_ASSERT(x) (EXPECT(x == hipSuccess))
 

@@ -24,18 +24,17 @@
 #ifndef MIGRAPHX_GUARD_RTGLIB_CPU_LOWERING_HPP
 #define MIGRAPHX_GUARD_RTGLIB_CPU_LOWERING_HPP
 
-#include <migraphx/config.hpp>
-#include <migraphx/ref/export.h>
+#include <migraphx/ref/context.hpp>
 #include <migraphx/program.hpp>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
 namespace ref {
 
-struct lowering
+struct MIGRAPHX_REF_EXPORT lowering
 {
-    static std::string name() { return "ref::lowering"; }
-    MIGRAPHX_REF_EXPORT static void apply(module& m);
+    std::string name() const { return "ref::lowering"; }
+    void apply(module& m) const;
 };
 
 } // namespace ref

@@ -21,12 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #####################################################################################
-
-# Minimum version required for protobuf::protoc IMPORTED target
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-
-include(GenerateExportHeader)
-
 set(PROTO_FILES
     graph.proto
     node_def.proto
@@ -37,11 +31,9 @@ set(PROTO_FILES
     types.proto
     function.proto
     op_def.proto
-    versions.proto)
-
+    versions.proto
+)
 add_library(tf-proto STATIC ${PROTO_FILES})
-set_target_properties(tf-proto PROPERTIES POSITION_INDEPENDENT_CODE On)
-
 if(WIN32)
     include(${protobuf_DIR}/protobuf-generate.cmake)
     add_dependencies(tf-proto protobuf::protoc)
@@ -64,22 +56,21 @@ else()
     find_package(Protobuf REQUIRED)
     protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_FILES})
     target_sources(tf-proto PRIVATE ${PROTO_SRCS} ${PROTO_HDRS})
-    target_include_directories(tf-proto SYSTEM PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+    target_include_directories(tf-proto SYSTEM PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${PROTOBUF_INCLUDE_DIR})
     target_compile_options(tf-proto PRIVATE -w)
 endif()
-
 target_link_libraries(tf-proto PRIVATE protobuf::libprotobuf)
+set_target_properties(tf-proto PROPERTIES POSITION_INDEPENDENT_CODE On)
 
-file(GLOB TF_SRCS ${CONFIGURE_DEPENDS} *.cpp)
+file(GLOB TF_SRCS CONFIGURE_DEPENDS *.cpp)
 add_library(migraphx_tf ${TF_SRCS})
-target_link_libraries(migraphx_tf PUBLIC migraphx)
 
-generate_export_header(migraphx_tf
-    EXPORT_FILE_NAME
-        ${CMAKE_BINARY_DIR}/include/migraphx/tf/export.h)
+migraphx_generate_export_header(migraphx_tf)
 
 target_include_directories(migraphx_tf PRIVATE include ${CMAKE_BINARY_DIR}/include)
-
+set_target_properties(migraphx_tf PROPERTIES EXPORT_NAME tf)
+rocm_set_soversion(migraphx_tf ${MIGRAPHX_SO_VERSION})
+rocm_clang_tidy_check(migraphx_tf)
 if(WIN32)
     target_link_libraries(migraphx_tf PRIVATE tf-proto protobuf::libprotobuf)
     target_include_directories(migraphx_tf SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
@@ -98,14 +89,11 @@ if(WIN32)
             -Wno-global-constructors
             -Wno-covered-switch-default)
 else()
-    rocm_set_soversion(migraphx_tf ${MIGRAPHX_SO_VERSION})
     target_link_libraries(migraphx_tf PRIVATE tf-proto "-Wl,--exclude-libs,ALL")
 endif()
+target_link_libraries(migraphx_tf PUBLIC migraphx)
 
-set_target_properties(migraphx_tf PROPERTIES EXPORT_NAME tf)
+rocm_install_targets(
+  TARGETS migraphx_tf
+)
 
-if(CLANG_TIDY_EXE)
-    rocm_clang_tidy_check(migraphx_tf)
-endif()
-
-rocm_install_targets(TARGETS migraphx_tf)

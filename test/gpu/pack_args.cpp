@@ -21,12 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 #include <test.hpp>
-
-#define MIGRAPHX_GPU_STATIC_DEFINE
-#define MIGRAPHX_STATIC_DEFINE
-
 #include <migraphx/gpu/pack_args.hpp>
 
 template <class T>

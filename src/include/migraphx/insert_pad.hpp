@@ -38,11 +38,11 @@ struct module;
 /**
  * insert pads if attribute of padding is asymmetrical
  */
-struct insert_pad
+struct MIGRAPHX_EXPORT insert_pad
 {
     std::string name() const { return "insert_pad"; }
 
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

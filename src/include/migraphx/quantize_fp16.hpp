@@ -37,11 +37,11 @@ struct module;
 /**
  * quantize a program to fp16
  */
-struct quantize_fp16_pass
+struct MIGRAPHX_EXPORT quantize_fp16_pass
 {
     std::vector<std::string> ins_names = {"all"};
     std::string name() const { return "quantize_fp16"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

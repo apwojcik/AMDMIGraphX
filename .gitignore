@@ -64,16 +64,19 @@ test/onnx/models
 .vscode
 .vs
 
-# JetBrains IDEs
-.idea/
-cmake-build*/
-build*/
-
 # documentation artifacts
 docs/_build
 docs/_images
 docs/_static
 docs/_templates
 docs/.doxygen/docBin
+docs/.doxygen/DoxygenWarningLog.txt
 docs/_doxygen
+docs/html
 /_readthedocs
+
+# JetBrains config directories (ignore symlinks)
+.idea/
+cmake-build*/
+build*/
+

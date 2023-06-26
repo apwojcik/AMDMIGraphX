@@ -23,10 +23,8 @@
  */
 #ifndef MIGRAPHX_GUARD_MIGRAPHLIB_ROCBLAS_HPP
 #define MIGRAPHX_GUARD_MIGRAPHLIB_ROCBLAS_HPP
-
 #include <migraphx/manage_ptr.hpp>
-#include <migraphx/config.hpp>
-#include <migraphx/gpu/export.h>
+#include <migraphx/gpu/config.hpp>
 #include <rocblas/rocblas.h>
 
 namespace migraphx {

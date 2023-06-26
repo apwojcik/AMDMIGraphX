@@ -24,16 +24,14 @@
 #ifndef MIGRAPHX_GUARD_RTGLIB_COMPILE_HIP_HPP
 #define MIGRAPHX_GUARD_RTGLIB_COMPILE_HIP_HPP
 
-#include <string>
-#include <utility>
-#include <vector>
-
-#include <migraphx/gpu/export.h>
-#include <migraphx/config.hpp>
+#include <migraphx/gpu/config.hpp>
 #include <migraphx/filesystem.hpp>
 #include <migraphx/compile_src.hpp>
 #include <migraphx/env.hpp>
 #include <migraphx/functional.hpp>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -47,10 +45,7 @@ MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_ENABLE_HIPRTC_WORKAROUNDS);
 struct hiprtc_src_file
 {
     hiprtc_src_file() = default;
-    hiprtc_src_file(const src_file& s)
-        : path(s.path.string()), content(s.content)
-    {
-    }
+    hiprtc_src_file(const src_file& s) : path(s.path.string()), content(s.content) {}
     std::string path;
     std::string content;
     template <class Self, class F>
@@ -60,10 +55,8 @@ struct hiprtc_src_file
     }
 };
 
-MIGRAPHX_GPU_EXPORT std::vector<std::vector<char>>
-compile_hip_src_with_hiprtc(std::vector<hiprtc_src_file> srcs,
-                            std::string params,
-                            const std::string& arch);
+MIGRAPHX_GPU_EXPORT std::vector<std::vector<char>> compile_hip_src_with_hiprtc(
+    std::vector<hiprtc_src_file> srcs, std::string params, const std::string& arch);
 
 MIGRAPHX_GPU_EXPORT std::vector<std::vector<char>>
 compile_hip_src(const std::vector<src_file>& srcs, std::string params, const std::string& arch);

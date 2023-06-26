@@ -21,8 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-#define MIGRAPHX_STATIC_DEFINE
 #include <migraphx/shape.hpp>
 #include <migraphx/argument.hpp>
 #include <migraphx/gpu/device/gather.hpp>
@@ -32,7 +30,8 @@
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu::device {
+namespace gpu {
+namespace device {
 
 argument gather(hipStream_t stream, argument result, argument arg1, argument arg2, int64_t axis)
 {
@@ -62,6 +61,7 @@ argument gather(hipStream_t stream, argument result, argument arg1, argument arg
     return result;
 }
 
+} // namespace device
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

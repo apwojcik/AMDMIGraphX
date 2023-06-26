@@ -32,12 +32,12 @@ struct module;
 
 namespace gpu {
 
-struct write_literals
+struct MIGRAPHX_GPU_EXPORT write_literals
 {
     context* ctx = nullptr;
     std::string name() const { return "gpu::write_literals"; }
 
-    MIGRAPHX_GPU_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace gpu

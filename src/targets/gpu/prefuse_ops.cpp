@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 #include <migraphx/gpu/prefuse_ops.hpp>
 #if !defined(_MSC_VER)
 #include <migraphx/match/layernorm.hpp>
 #include <migraphx/check_shapes.hpp>
+#include <migraphx/make_op.hpp>
 #include <migraphx/register_op.hpp>
 #endif
 #include <migraphx/pass_manager.hpp>
@@ -49,7 +49,7 @@ struct layernorm_base
     {
         return pack(f(self.epsilon, "epsilon"));
     }
-    [[nodiscard]] shape compute_shape(std::vector<shape> inputs, std::vector<module_ref> mods) const
+    shape compute_shape(std::vector<shape> inputs, std::vector<module_ref> mods) const
     {
         std::size_t nargs = 1;
         if(not mods.empty())
@@ -80,21 +80,21 @@ struct layernorm_base
 struct layernorm : layernorm_base<layernorm, 0>
 {
 
-    static std::string name() { return "gpu::prelayernorm"; }
+    std::string name() const { return "gpu::prelayernorm"; }
 };
-MIGRAPHX_REGISTER_OP(layernorm)
+MIGRAPHX_REGISTER_OP(layernorm);
 
 struct add_layernorm : layernorm_base<add_layernorm, 1>
 {
-    static std::string name() { return "gpu::preadd_layernorm"; }
+    std::string name() const { return "gpu::preadd_layernorm"; }
 };
 MIGRAPHX_REGISTER_OP(add_layernorm);
 
 struct find_layernorm
 {
-    static auto matcher() { return match::layernorm(); }
+    auto matcher() const { return match::layernorm(); }
 
-    static void apply(module& m, const match::matcher_result& r)
+    void apply(module& m, const match::matcher_result& r) const
     {
         auto ins   = r.result;
         auto x_ins = r.instructions["x"];
@@ -108,13 +108,13 @@ struct find_layernorm
 
 struct find_add_layernorm
 {
-    static auto matcher()
+    auto matcher() const
     {
         return match::name("gpu::prelayernorm")(
             match::args(match::name("add")(match::used_once()).bind("add")));
     }
 
-    static void apply(module& m, const match::matcher_result& r)
+    void apply(module& m, const match::matcher_result& r) const
     {
         auto ins     = r.result;
         auto add_ins = r.instructions["add"];
@@ -126,9 +126,9 @@ struct find_add_layernorm
 } // namespace
 #endif
 
-void prefuse_ops::apply(module_pass_manager& mpm)
+void prefuse_ops::apply(module_pass_manager& mpm) const
 {
-#if !defined(_MSVC)
+#if !defined(_MSC_VER)
     match::find_matches(mpm.get_module(), find_layernorm{});
     mpm.run_pass(dead_code_elimination{});
     match::find_matches(mpm.get_module(), find_add_layernorm{});

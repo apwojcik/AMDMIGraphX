@@ -38,12 +38,12 @@ struct module;
  * Remove data types. This will instert convert operators so the data type
  * is not used by any operator.
  */
-struct eliminate_data_type
+struct MIGRAPHX_EXPORT eliminate_data_type
 {
     std::set<shape::type_t> types;
     shape::type_t target_type;
-    static std::string name() { return "eliminate_data_type"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    std::string name() const { return "eliminate_data_type"; }
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

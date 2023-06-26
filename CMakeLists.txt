@@ -23,20 +23,29 @@
 #####################################################################################
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
-set(CMAKE_DISABLE_SOURCE_CHANGES ON)
-set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+    message(FATAL_ERROR "The binary and source directroy cannot be the same")
+endif()
 
 get_property(_GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 # This has to be initialized before the project() command appears
-# Set the default of CMAKE_BUILD_TYPE to be release, unless user specifies with -D.
-if(NOT _GENERATOR_IS_MULTI_CONFIG AND NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
+# Set the default of CMAKE_BUILD_TYPE to be release, unless user specifies with -D.  MSVC_IDE does not use CMAKE_BUILD_TYPE
+if(_GENERATOR_IS_MULTI_CONFIG)
+    if (NOT CMAKE_CONFIGURATION_TYPES)
+        set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;MinSizeRel" CACHE STRING
+            "Available build types (configurations) on multi-config generators")
+    endif()
+else()
+    if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Release CACHE STRING
+            "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel.")
+    endif()
 endif()
 
-if(NOT WIN32)
-    set(CMAKE_BUILD_RPATH "${CMAKE_BINARY_DIR}/lib")
-endif()
+set(CMAKE_BUILD_RPATH "${CMAKE_BINARY_DIR}/lib")
+
+list(APPEND CMAKE_PREFIX_PATH /opt/rocm /opt/rocm/llvm $ENV{ROCM_PATH} $ENV{HIP_PATH})
 
 project(migraphx LANGUAGES C CXX)
 include(CTest)
@@ -45,7 +54,7 @@ find_package(ROCM REQUIRED)
 find_package(Threads REQUIRED)
 
 if(WIN32)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_compile_definitions($<$<COMPILE_LANGUAGE:C,CXX>:_CRT_SECURE_NO_WARNINGS>)
     add_subdirectory(extern)
 else()
     find_path(HALF_INCLUDE_DIR half.hpp PATH_SUFFIXES half)
@@ -53,6 +62,7 @@ else()
         message(FATAL_ERROR "Could not find half.hpp - Please check that the install path of half.hpp has been added to CMAKE_PREFIX_PATH")
     endif()
 endif()
+message(STATUS "half.hpp is at ${HALF_INCLUDE_DIR}")
 
 include(CheckTypeSize)
 set(CMAKE_REQUIRED_INCLUDES ${HALF_INCLUDE_DIR})
@@ -64,14 +74,11 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 include(ROCMSetupVersion)
 
 option(BUILD_DEV "Build for development purpose only" OFF)
-option(BUILD_SHARED_LIBS "Build as a shared library" ON)
-
-if(BUILD_TESTING AND NOT BUILD_DEV)
-    set(BUILD_DEV ON CACHE BOOL "" FORCE)
-endif()
 
 rocm_setup_version(VERSION 2.7.0)
 set(MIGRAPHX_SO_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
+
+option( BUILD_SHARED_LIBS "Build as a shared library" ON )
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("--cuda-host-only -x hip" HAS_HIP)
@@ -92,181 +99,175 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if(${CMAKE_VERSION} VERSION_LESS "3.12.0")
-    set(CONFIGURE_DEPENDS)
-else()
-    set(CONFIGURE_DEPENDS CONFIGURE_DEPENDS)
-endif()
-
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(EnableCompilerWarnings)
-#include(ROCMClangTidy)
+include(ClangTidy)
 if(CMAKE_CXX_COMPILER MATCHES ".*clang\\+\\+.*")
     set(MIGRAPHX_TIDY_ERRORS ERRORS * -readability-inconsistent-declaration-parameter-name)
 # Enable tidy on hip
 elseif(MIGRAPHX_ENABLE_GPU)
     set(MIGRAPHX_TIDY_ERRORS ALL)
 endif()
-if(CLANG_TIDY_EXE)
-    rocm_enable_clang_tidy(
-        CHECKS
-            boost-*
-            bugprone-*
-            cert-*
-            clang-analyzer-*
-            clang-diagnostic-*
-            cppcoreguidelines-*
-            google-*
-            hicpp-multiway-paths-covered
-            hicpp-signed-bitwise
-            llvm-namespace-comment
-            misc-*
-        -misc-confusable-identifiers
-            modernize-*
-            performance-*
-            readability-*
-            -bugprone-easily-swappable-parameters
-            -bugprone-implicit-widening-of-multiplication-result
-            -bugprone-macro-parentheses
-            -bugprone-signed-char-misuse
-            # Disable the aliased reserved identifiers
-            -cert-dcl37-c
-            -cert-dcl51-cpp
-            -cert-err33-c
-            -cert-str34-c
-            # Disable all alpha checks by default
-            -clang-analyzer-alpha*
-            # Enable some alpha checks
-            clang-analyzer-alpha.core.CallAndMessageUnInitRefArg
-            clang-analyzer-alpha.core.Conversion
-            clang-analyzer-alpha.core.IdenticalExpr
-            clang-analyzer-alpha.core.PointerArithm
-            clang-analyzer-alpha.core.PointerSub
-            clang-analyzer-alpha.core.TestAfterDivZero
-            clang-analyzer-alpha.cplusplus.InvalidIterator
-            clang-analyzer-alpha.cplusplus.IteratorRange
-            clang-analyzer-alpha.cplusplus.MismatchedIterator
-            clang-analyzer-alpha.cplusplus.MisusedMovedObject
-            -clang-analyzer-optin.performance.Padding
-            -clang-diagnostic-deprecated-declarations
-            -clang-diagnostic-extern-c-compat
-            -clang-diagnostic-disabled-macro-expansion
-            -clang-diagnostic-unused-command-line-argument
-            -cppcoreguidelines-avoid-do-while
-            -cppcoreguidelines-avoid-const-or-ref-data-members
-            -cppcoreguidelines-explicit-virtual-functions
-            -cppcoreguidelines-init-variables
-            -cppcoreguidelines-pro-bounds-array-to-pointer-decay
-            -cppcoreguidelines-pro-bounds-constant-array-index
-            -cppcoreguidelines-pro-bounds-pointer-arithmetic
-            -cppcoreguidelines-pro-type-member-init
-            -cppcoreguidelines-pro-type-reinterpret-cast
-            -cppcoreguidelines-pro-type-union-access
-            -cppcoreguidelines-pro-type-vararg
-            -cppcoreguidelines-special-member-functions
-            -cppcoreguidelines-virtual-class-destructor
-            -google-readability-*
-            -google-runtime-int
-            -google-runtime-references
-            -misc-macro-parentheses
-            -misc-no-recursion
-            -modernize-concat-nested-namespaces
-            -modernize-pass-by-value
-            -modernize-use-default-member-init
-            -modernize-use-nodiscard
-            -modernize-use-override
-            -modernize-use-trailing-return-type
-            -modernize-use-transparent-functors
-            -performance-type-promotion-in-math-fn
-            -readability-braces-around-statements
-            -readability-convert-member-functions-to-static
-            -readability-else-after-return
-            -readability-function-cognitive-complexity
-            -readability-identifier-length
-            -readability-named-parameter
-            -readability-redundant-string-init
-            -readability-suspicious-call-argument
-            -readability-uppercase-literal-suffix
-            -*-avoid-c-arrays
-            -*-explicit-constructor
-            -*-magic-numbers
-            -*-narrowing-conversions
-            -*-non-private-member-variables-in-classes
-            -*-use-auto
-            -*-use-emplace
-            -*-use-equals-default
-        ${MIGRAPHX_TIDY_ERRORS}
-        HEADER_FILTER
-            ".*hpp"
-        EXTRA_ARGS
-            -UNDEBUG
-            -DMIGRAPHX_USE_CLANG_TIDY
-        CLANG_ARGS
-            -analyzer-max-loop 10
-            -analyzer-inline-max-stack-depth 10
-            -analyzer-config optin.cplusplus.UninitializedObject:Pedantic=true
-            -analyzer-config widen-loops=true
-            -analyzer-config unroll-loops=true
-            -analyzer-config cfg-lifetime=true
-            -analyzer-config cfg-scopes=true
-    )
-endif()
-include(ROCMCppCheck)
-if(CPPCHECK_EXE)
-    rocm_enable_cppcheck(
-        CHECKS
-            warning
-            style
-            performance
-            portability
-        SUPPRESS
-            ConfigurationNotChecked
-            unmatchedSuppression
-            unusedFunction
-            ctuPointerArith
-            noExplicitConstructor
-            passedByValue
-            unusedStructMember
-            functionStatic
-            functionConst
-            shadowFunction
-            shadowVar
-            shadowVariable
-            unsafeClassDivZero
-            definePrefix:*test/include/test.hpp
-            ctuOneDefinitionRuleViolation:*test/*
-            useSmartPointer:*src/api/api.cpp
-            useSmartPointer:*make_shared_array.hpp
-            constParameter:*src/targets/gpu/*.cpp
-            constParameter:*src/targets/gpu/*.hpp
-            # Suppress mlir_conv.cpp since this file will be deleted
-            *:*src/targets/gpu/mlir_conv.cpp
-        FORCE
-        INCONCLUSIVE
-        RULE_FILE
-            ${CMAKE_CURRENT_SOURCE_DIR}/cppcheck.rules
-        SOURCES
-            examples/
-            src/
-            test/
-        INCLUDE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/targets/cpu/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/targets/gpu/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/targets/gpu/device/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/targets/gpu/kernels/include
-            ${CMAKE_CURRENT_SOURCE_DIR}/test/include
-        DEFINE
-            CPPCHECK=1
-            __device__=
-            __host__=
-            __global__=
-    )
-endif()
+rocm_enable_clang_tidy(
+    CHECKS
+        boost-*
+        bugprone-*
+        cert-*
+        clang-analyzer-*
+        clang-diagnostic-*
+        cppcoreguidelines-*
+        google-*
+        hicpp-multiway-paths-covered
+        hicpp-signed-bitwise
+        llvm-namespace-comment
+        misc-*
+	-misc-confusable-identifiers
+        modernize-*
+        performance-*
+        readability-*
+        -bugprone-easily-swappable-parameters
+        -bugprone-implicit-widening-of-multiplication-result
+        -bugprone-macro-parentheses
+        -bugprone-signed-char-misuse
+        # Disable the aliased reserved identifiers
+        -cert-dcl37-c
+        -cert-dcl51-cpp
+        -cert-err33-c
+        -cert-str34-c
+        # Disable all alpha checks by default
+        -clang-analyzer-alpha*
+        # Enable some alpha checks
+        clang-analyzer-alpha.core.CallAndMessageUnInitRefArg
+        clang-analyzer-alpha.core.Conversion
+        clang-analyzer-alpha.core.IdenticalExpr
+        clang-analyzer-alpha.core.PointerArithm
+        clang-analyzer-alpha.core.PointerSub
+        clang-analyzer-alpha.core.TestAfterDivZero
+        clang-analyzer-alpha.cplusplus.InvalidIterator
+        clang-analyzer-alpha.cplusplus.IteratorRange
+        clang-analyzer-alpha.cplusplus.MismatchedIterator
+        clang-analyzer-alpha.cplusplus.MisusedMovedObject
+        -clang-analyzer-optin.performance.Padding
+        -clang-diagnostic-deprecated-declarations
+        -clang-diagnostic-extern-c-compat
+        -clang-diagnostic-disabled-macro-expansion
+        -clang-diagnostic-unused-command-line-argument
+        -cppcoreguidelines-avoid-do-while
+        -cppcoreguidelines-avoid-const-or-ref-data-members
+        -cppcoreguidelines-explicit-virtual-functions
+        -cppcoreguidelines-init-variables
+        -cppcoreguidelines-pro-bounds-array-to-pointer-decay
+        -cppcoreguidelines-pro-bounds-constant-array-index
+        -cppcoreguidelines-pro-bounds-pointer-arithmetic
+        -cppcoreguidelines-pro-type-member-init
+        -cppcoreguidelines-pro-type-reinterpret-cast
+        -cppcoreguidelines-pro-type-union-access
+        -cppcoreguidelines-pro-type-vararg
+        -cppcoreguidelines-special-member-functions
+        -cppcoreguidelines-virtual-class-destructor
+        -google-readability-*
+        -google-runtime-int
+        -google-runtime-references
+        -misc-macro-parentheses
+        -misc-no-recursion
+        -modernize-concat-nested-namespaces
+        -modernize-pass-by-value
+        -modernize-use-default-member-init
+        -modernize-use-nodiscard
+        -modernize-use-override
+        -modernize-use-trailing-return-type
+        -modernize-use-transparent-functors
+        -performance-type-promotion-in-math-fn
+        -readability-braces-around-statements
+        -readability-convert-member-functions-to-static
+        -readability-else-after-return
+        -readability-function-cognitive-complexity
+        -readability-identifier-length
+        -readability-named-parameter
+        -readability-redundant-string-init
+        -readability-suspicious-call-argument
+        -readability-uppercase-literal-suffix
+        -*-avoid-c-arrays
+        -*-explicit-constructor
+        -*-magic-numbers
+        -*-narrowing-conversions
+        -*-non-private-member-variables-in-classes
+        -*-use-auto
+        -*-use-emplace
+        -*-use-equals-default
+    ${MIGRAPHX_TIDY_ERRORS}
+    HEADER_FILTER
+        ".*hpp"
+    EXTRA_ARGS
+        -UNDEBUG
+        -DMIGRAPHX_USE_CLANG_TIDY
+    CLANG_ARGS
+        -analyzer-max-loop 10
+        -analyzer-inline-max-stack-depth 10
+        -analyzer-config optin.cplusplus.UninitializedObject:Pedantic=true
+        -analyzer-config widen-loops=true
+        -analyzer-config unroll-loops=true
+        -analyzer-config cfg-lifetime=true
+        -analyzer-config cfg-scopes=true
+)
+include(CppCheck)
+rocm_enable_cppcheck(
+    CHECKS
+        warning
+        style
+        performance
+        portability
+    SUPPRESS
+        ConfigurationNotChecked
+        unmatchedSuppression
+        unusedFunction
+        ctuPointerArith
+        noExplicitConstructor
+        passedByValue
+        unusedStructMember
+        functionStatic
+        functionConst
+        shadowFunction
+        shadowVar
+        shadowVariable
+        unsafeClassDivZero
+        definePrefix:*test/include/test.hpp
+        ctuOneDefinitionRuleViolation:*test/*
+        useSmartPointer:*src/api/api.cpp
+        useSmartPointer:*make_shared_array.hpp
+        constParameter:*src/targets/gpu/*.cpp
+        constParameter:*src/targets/gpu/*.hpp
+        # Suppress mlir_conv.cpp since this file will be deleted
+        *:*src/targets/gpu/mlir_conv.cpp
+    FORCE
+    INCONCLUSIVE
+    RULE_FILE
+        ${CMAKE_CURRENT_SOURCE_DIR}/cppcheck.rules
+    SOURCES
+        examples/
+        src/
+        test/
+    INCLUDE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/targets/cpu/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/targets/gpu/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/targets/gpu/device/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/targets/gpu/kernels/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/include
+    DEFINE
+        CPPCHECK=1
+        __device__=
+        __host__=
+        __global__=
+)
 
 enable_testing()
 
 include(ROCMCreatePackage)
+
+if(BUILD_TESTING)
+    add_compile_definitions($<$<COMPILE_LANGUAGE:C,CXX>:MIGRAPHX_BUILD_TESTING>)
+endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)

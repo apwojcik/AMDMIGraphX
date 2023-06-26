@@ -24,11 +24,6 @@
 #ifndef MIGRAPHX_GUARD_MATCH_GELU_ERF_HPP
 #define MIGRAPHX_GUARD_MATCH_GELU_ERF_HPP
 
-#ifdef _WIN32
-#define _USE_MATH_DEFINES
-#include <math.h>
-#endif
-
 #include <migraphx/config.hpp>
 #include <migraphx/matcher.hpp>
 

@@ -40,22 +40,28 @@ struct src_file
     std::string_view content;
 
     src_file() = delete;
-    src_file(fs::path path_, std::string_view content_)
-        : path{ std::move(path_) }, content{ content_ } {}
+    src_file(fs::path file_path, std::string_view file_content)
+        : path{std::move(file_path)}, content{file_content}
+    {
+    }
+
+    explicit src_file(const std::pair<std::string_view, std::string_view>& pair)
+        : path{pair.first}, content{pair.second}
+    {
+    }
 };
 
-struct src_compiler
+struct MIGRAPHX_EXPORT src_compiler
 {
     std::string compiler                      = "c++";
-    std::string flags;
-    std::string output;
-    std::string launcher;
+    std::string flags                         = "";
+    std::string output                        = "";
+    std::string launcher                      = "";
     std::string out_ext                       = ".o";
     std::function<fs::path(fs::path)> process = nullptr;
-    [[nodiscard]] MIGRAPHX_EXPORT std::vector<char> compile(const std::vector<src_file>& srcs) const;
+    std::vector<char> compile(const std::vector<src_file>& srcs) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx
-
 #endif // MIGRAPHX_GUARD_MIGRAPHX_COMPILE_SRC_HPP

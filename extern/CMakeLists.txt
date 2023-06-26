@@ -1,8 +1,7 @@
-################################################################################
+#####################################################################################
+# The MIT License (MIT)
 #
-# MIT License
-#
-# Copyright (c) 2022 Advanced Micro Devices, Inc.
+# Copyright (c) 2015-2022 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -11,18 +10,17 @@
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-################################################################################
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#####################################################################################
 
 # Windows build requires CMake version 3.24 at minimum, due to SYSTEM argument to FetchContent
 cmake_minimum_required(VERSION 3.24.0 FATAL_ERROR)
@@ -258,6 +256,19 @@ if(MIGRAPHX_ENABLE_CPU)
             PRIVATE
                 ${__dnnl_compile_options})
         unset(__dnnl_compile_options)
+
+        # For compatibility with find_package()
+        add_library(DNNL::dnnl INTERFACE IMPORTED GLOBAL)
+        target_link_libraries(DNNL::dnnl INTERFACE dnnl)
+
+        add_library(DNNL::dnnl_common INTERFACE IMPORTED GLOBAL)
+        target_link_libraries(DNNL::dnnl_common INTERFACE dnnl_common)
+
+        add_library(DNNL::dnnl_cpu INTERFACE IMPORTED GLOBAL)
+        target_link_libraries(DNNL::dnnl_cpu INTERFACE dnnl_cpu)
+
+        add_library(DNNL::dnnl_cpu_x64 INTERFACE IMPORTED GLOBAL)
+        target_link_libraries(DNNL::dnnl_cpu_x64 INTERFACE dnnl_cpu_x64)
     endif()
 endif()
 
@@ -285,6 +296,12 @@ find_program(NMAKE_EXECUTABLE NAMES nmake.exe REQUIRED HINTS "${NMAKE_DIR}")
 
 include(ExternalProject)
 
+file(TO_NATIVE_PATH ${CMAKE_BINARY_DIR} __native_binary_dir)
+
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
+
 ExternalProject_Add(
         sqlite3
         GIT_REPOSITORY https://github.com/sqlite/sqlite.git
@@ -293,16 +310,15 @@ ExternalProject_Add(
         UPDATE_DISCONNECTED true
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ${NMAKE_EXECUTABLE} /f ..\\sqlite3\\Makefile.msc TOP=..\\sqlite3
-        INSTALL_COMMAND cmd.exe /c for %I in (sqlite3.dll sqlite3.lib sqlite3.h sqlite3ext.h) do copy /y %I ..\\..)
+        INSTALL_COMMAND cmd.exe /c copy /y sqlite3.dll "${__native_binary_dir}\\bin" && copy /y sqlite3.lib "${__native_binary_dir}\\lib" && for %I in (sqlite3.h sqlite3ext.h) do copy /y %I "${__native_binary_dir}\\include")
 
-ExternalProject_Get_Property(sqlite3 install_dir)
-
-add_library(sqlite3::sqlite3 INTERFACE IMPORTED GLOBAL)
-add_dependencies(sqlite3::sqlite3 sqlite3)
-target_link_directories(sqlite3::sqlite3 INTERFACE ${install_dir})
-target_link_libraries(sqlite3::sqlite3 INTERFACE sqlite3.lib)
-target_include_directories(sqlite3::sqlite3 INTERFACE ${install_dir})
-
+# For compatibility with PkgConfig on Linux
+add_library(PkgConfig::SQLITE3 INTERFACE IMPORTED GLOBAL)
+add_dependencies(PkgConfig::SQLITE3 sqlite3)
+target_link_directories(PkgConfig::SQLITE3 INTERFACE ${CMAKE_BINARY_DIR}/lib)
+target_link_libraries(PkgConfig::SQLITE3 INTERFACE sqlite3.lib)
+target_include_directories(PkgConfig::SQLITE3 INTERFACE ${CMAKE_BINARY_DIR}/include)
+    
 macro(install)
     _install(${ARGN})
 endmacro()

@@ -22,27 +22,18 @@
 # THE SOFTWARE.
 #####################################################################################
 
-include(GenerateExportHeader)
-
-add_library(migraphx_c api.cpp)
+add_library(migraphx_c
+    api.cpp
+)
 set_target_properties(migraphx_c PROPERTIES EXPORT_NAME c)
+migraphx_generate_export_header(migraphx_c)
 
-if(NOT WIN32)
-    # migraphx_c is stable API interface library. SO version of this should be 
-    # bumped when binary compatibility is broken. 
-    rocm_set_soversion(migraphx_c 3.0)
-endif()
+# migraphx_c is stable API interface library. SO version of this should be 
+# bumped when binary compatibility is broken. 
+rocm_set_soversion(migraphx_c 3.0)   
 
-if(CLANG_TIDY_EXE)
-    rocm_clang_tidy_check(migraphx_c)
-endif()
-
-generate_export_header(migraphx_c
-    EXPORT_FILE_NAME
-        ${CMAKE_BINARY_DIR}/include/migraphx/api/export.h)
-
+rocm_clang_tidy_check(migraphx_c)
 target_link_libraries(migraphx_c PRIVATE migraphx migraphx_tf migraphx_onnx)
-target_include_directories(migraphx_c PRIVATE ${CMAKE_BINARY_DIR}/include)
 
 rocm_install_targets(
   TARGETS migraphx_c

@@ -37,13 +37,14 @@
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu::device {
+namespace gpu {
+namespace device {
 
 MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_TRACE_NARY);
 
 // NOLINTNEXTLINE
 #define MIGRAPHX_TRACE_NARY_FUNCTION   \
-    if(enabled(MIGRAPHX_TRACE_NARY)) \
+    if(enabled(MIGRAPHX_TRACE_NARY{})) \
         std::cout << "nary device function: " << __PRETTY_FUNCTION__ << std::endl;
 
 template <class... Ts>
@@ -464,6 +465,7 @@ auto nary(hipStream_t stream, argument result, Arguments... args)
     };
 }
 
+} // namespace device
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

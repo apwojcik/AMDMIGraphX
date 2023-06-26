@@ -37,11 +37,11 @@ struct program;
 /**
  * Remove instructions where the output is not used.
  */
-struct dead_code_elimination
+struct MIGRAPHX_EXPORT dead_code_elimination
 {
     std::string name() const { return "dead_code_elimination"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
-    MIGRAPHX_EXPORT void apply(program& p) const;
+    void apply(module& m) const;
+    void apply(program& p) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

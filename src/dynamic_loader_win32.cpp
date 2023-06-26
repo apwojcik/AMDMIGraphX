@@ -27,6 +27,7 @@
 #include <migraphx/tmp_dir.hpp>
 #include <utility>
 
+// cppcheck-suppress definePrefix
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
@@ -39,33 +40,33 @@ struct dynamic_loader_impl
     dynamic_loader_impl(const fs::path& p, std::shared_ptr<tmp_dir> t = nullptr)
         : handle(LoadLibrary(p.string().c_str())), temp(std::move(t))
     {
-        if (!handle) {
-            MIGRAPHX_THROW("Error loading DLL: " + p.string() +
-                           " (" + std::to_string(GetLastError()) + ")");
+        if(handle == nullptr)
+        {
+            MIGRAPHX_THROW("Error loading DLL: " + p.string() + " (" +
+                           std::to_string(GetLastError()) + ")");
         }
     }
 
     ~dynamic_loader_impl()
     {
-        if (handle != nullptr)
+        if(handle != nullptr)
         {
             FreeLibrary(handle);
         }
     }
     static std::shared_ptr<dynamic_loader_impl> from_buffer(const char* image, std::size_t size)
     {
-        auto t = std::make_shared<tmp_dir>("dloader");
+        auto t = std::make_shared<tmp_dir>("migx-dynload");
         auto f = t->path / "tmp.dll";
         write_buffer(f.string(), image, size);
         return std::make_shared<dynamic_loader_impl>(f, t);
     }
 
-    HMODULE handle = nullptr;
+    HMODULE handle                = nullptr;
     std::shared_ptr<tmp_dir> temp = nullptr;
 };
 
-dynamic_loader::dynamic_loader(const fs::path& p)
-    : impl(std::make_shared<dynamic_loader_impl>(p))
+dynamic_loader::dynamic_loader(const fs::path& p) : impl(std::make_shared<dynamic_loader_impl>(p))
 {
 }
 
@@ -83,9 +84,8 @@ std::shared_ptr<void> dynamic_loader::get_symbol(const std::string& name) const
 {
     FARPROC addr = GetProcAddress(impl->handle, name.c_str());
     if(addr == nullptr)
-        MIGRAPHX_THROW("Symbol not found: " + name +
-                       " (" + std::to_string(GetLastError()) + ")");
-    return {impl, reinterpret_cast<void*>(addr)} ;
+        MIGRAPHX_THROW("Symbol not found: " + name + " (" + std::to_string(GetLastError()) + ")");
+    return {impl, reinterpret_cast<void*>(addr)};
 }
 
 } // namespace MIGRAPHX_INLINE_NS

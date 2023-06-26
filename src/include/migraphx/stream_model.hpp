@@ -30,10 +30,10 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 #include <migraphx/config.hpp>
 #include <migraphx/instruction_ref.hpp>
+#include <vector>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -62,7 +62,7 @@ struct stream_model
 #ifdef TYPE_ERASED_DECLARATION
 
 // Type-erased interface for:
-struct stream_model
+struct MIGRAPHX_EXPORT stream_model
 {
     //
     std::size_t get_nstream() const;

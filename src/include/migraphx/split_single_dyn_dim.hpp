@@ -36,10 +36,10 @@ inline namespace MIGRAPHX_INLINE_NS {
  * Split dynamic dimension over submodules if exactly one dimension in the parameter list is
  * dynamic.
  */
-struct split_single_dyn_dim
+struct MIGRAPHX_EXPORT split_single_dyn_dim
 {
     std::string name() const { return "split_single_dyn_dim"; }
-    MIGRAPHX_EXPORT void apply(module_pass_manager&) const;
+    void apply(module_pass_manager&) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

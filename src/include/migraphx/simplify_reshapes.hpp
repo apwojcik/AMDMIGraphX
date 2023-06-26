@@ -36,10 +36,10 @@ struct module;
 /**
  * Eliminate redundant reshapes.
  */
-struct simplify_reshapes
+struct MIGRAPHX_EXPORT simplify_reshapes
 {
     std::string name() const { return "simplify_reshapes"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

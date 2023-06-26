@@ -42,11 +42,11 @@ inline namespace MIGRAPHX_INLINE_NS {
  * or it can be owned by the argument.
  *
  */
-struct argument : raw_data<argument>
+struct MIGRAPHX_EXPORT argument : raw_data<argument>
 {
     argument() = default;
 
-    MIGRAPHX_EXPORT argument(const shape& s);
+    argument(const shape& s);
 
     template <class F, MIGRAPHX_REQUIRES(std::is_pointer<decltype(std::declval<F>()())>{})>
     argument(shape s, F d)
@@ -69,40 +69,40 @@ struct argument : raw_data<argument>
         assign_buffer([d] { return reinterpret_cast<char*>(d.get()); });
     }
 
-    MIGRAPHX_EXPORT argument(shape s, std::nullptr_t);
+    argument(shape s, std::nullptr_t);
     
-    MIGRAPHX_EXPORT argument(const std::vector<argument>& args);
+    argument(const std::vector<argument>& args);
 
     /// Provides a raw pointer to the data
-    MIGRAPHX_EXPORT char* data() const;
+    char* data() const;
 
     /// Whether data is available
-    MIGRAPHX_EXPORT bool empty() const;
+    bool empty() const;
 
-    MIGRAPHX_EXPORT const shape& get_shape() const;
+    const shape& get_shape() const;
 
-    MIGRAPHX_EXPORT argument reshape(const shape& s) const;
+    argument reshape(const shape& s) const;
 
-    MIGRAPHX_EXPORT argument copy() const;
+    argument copy() const;
 
     /// Make copy of the argument that is always sharing the data
-    MIGRAPHX_EXPORT argument share() const;
+    argument share() const;
 
-    MIGRAPHX_EXPORT std::vector<argument> get_sub_objects() const;
+    std::vector<argument> get_sub_objects() const;
 
     /// Return the ith element
-    MIGRAPHX_EXPORT argument element(std::size_t i) const;
+    argument element(std::size_t i) const;
 
     private:
-    MIGRAPHX_EXPORT void assign_buffer(std::function<char*()> d);
+    void assign_buffer(std::function<char*()> d);
     struct data_t
     {
         std::function<char*()> get = nullptr;
         std::vector<data_t> sub = {};
-        MIGRAPHX_EXPORT data_t share() const;
-        MIGRAPHX_EXPORT static data_t from_args(const std::vector<argument>& args);
+        data_t share() const;
+        static data_t from_args(const std::vector<argument>& args);
     };
-    MIGRAPHX_EXPORT argument(const shape& s, const data_t& d);
+    argument(const shape& s, const data_t& d);
     shape m_shape;
     data_t m_data{};
 };

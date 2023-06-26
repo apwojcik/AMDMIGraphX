@@ -41,7 +41,7 @@ form = string.Template('''
 #ifdef TYPE_ERASED_DECLARATION
 
 // Type-erased interface for:
-struct ${struct_name}
+struct MIGRAPHX_EXPORT ${struct_name}
 {
 ${decl_members}
 };

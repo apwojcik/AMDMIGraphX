@@ -23,7 +23,6 @@
 #####################################################################################
 
 include(CheckCXXCompilerFlag)
-include(GenerateExportHeader)
 
 add_library(migraphx_cpu
     allocate.cpp
@@ -54,66 +53,43 @@ add_library(migraphx_cpu
     target.cpp
     write_literals.cpp
 )
-
-generate_export_header(migraphx_cpu
-    EXPORT_FILE_NAME
-        ${CMAKE_BINARY_DIR}/include/migraphx/cpu/export.h)
-
-if(WIN32)
-    target_compile_options(migraphx_cpu
-        PRIVATE
-            -fdelayed-template-parsing        
-            -fms-extensions
-            -fms-compatibility)
-endif()        
-
 set_target_properties(migraphx_cpu PROPERTIES EXPORT_NAME cpu)
-
-if(NOT WIN32)
-    rocm_set_soversion(migraphx_cpu ${MIGRAPHX_SO_VERSION})
-endif()
+rocm_set_soversion(migraphx_cpu ${MIGRAPHX_SO_VERSION})
 
 set(MIGRAPHX_ENABLE_ZENDNN Off CACHE BOOL "")
-target_include_directories(migraphx_cpu PRIVATE ${CMAKE_BINARY_DIR}/include)
 
-if(WIN32)
-    if(MIGRAPHX_ENABLE_ZENDNN)
-        target_link_libraries(migraphx_cpu PRIVATE amdZenDNN)
-    else()
-        target_link_libraries(migraphx_cpu PRIVATE dnnl)
-    endif()
-else()
+if(NOT WIN32)
     if(MIGRAPHX_ENABLE_ZENDNN)
         find_path(ZENDNN_INC_PATH zendnn.hpp)
         find_library(ZENDNN_LIB amdZenDNN)
         find_library(BLIS_LIB blis)
-        target_include_directories(migraphx_cpu PRIVATE ${ZENDNN_INC_PATH})
-        message(STATUS "ZENDNN_LIB: ${ZENDNN_LIB}")
-        target_link_libraries(migraphx_cpu PRIVATE ${BLIS_LIB})
-        target_link_libraries(migraphx_cpu PRIVATE ${ZENDNN_LIB})
     else()
         find_package(dnnl REQUIRED)
-        target_link_libraries(migraphx_cpu PRIVATE DNNL::dnnl)
     endif()
 endif()
 
-if(CLANG_TIDY_EXE)
-    rocm_clang_tidy_check(migraphx_cpu)
-endif()
+rocm_clang_tidy_check(migraphx_cpu)
 
 if(MIGRAPHX_ENABLE_ZENDNN)
     target_compile_definitions(migraphx_cpu PRIVATE -DMIGRAPHX_ENABLE_ZENDNN)
+    target_include_directories(migraphx_cpu PRIVATE ${ZENDNN_INC_PATH})
+    message(STATUS "ZENDNN_LIB: ${ZENDNN_LIB}")
+    target_link_libraries(migraphx_cpu PRIVATE ${BLIS_LIB})
+    target_link_libraries(migraphx_cpu PRIVATE ${ZENDNN_LIB})
+else()
+    target_link_libraries(migraphx_cpu PUBLIC DNNL::dnnl)
 endif()
-
 target_link_libraries(migraphx_cpu PRIVATE migraphx)
 
-find_package(OpenMP REQUIRED COMPONENTS CXX)
+migraphx_generate_export_header(migraphx_cpu)
+
+find_package(OpenMP)
 if(WIN32)
-    target_link_libraries(migraphx_cpu PRIVATE libomp)
-    target_include_directories(migraphx_cpu PRIVATE ${OpenMP_CXX_INCLUDE_DIRS})
-    target_compile_options(migraphx_cpu PRIVATE ${OpenMP_CXX_FLAGS})
+    target_link_libraries(migraphx_cpu PUBLIC libomp)
+    target_include_directories(migraphx_cpu PUBLIC ${OpenMP_CXX_INCLUDE_DIRS})
+    target_compile_options(migraphx_cpu PUBLIC ${OpenMP_CXX_FLAGS})
 else()
-    target_link_libraries(migraphx_cpu PRIVATE OpenMP::OpenMP_CXX)
+    target_link_libraries(migraphx_cpu PUBLIC OpenMP::OpenMP_CXX)
     # Add library path to rpath to workaround issues with our broken packages
     foreach(LIBRARY ${OpenMP_CXX_LIBRARIES})
         if(LIBRARY MATCHES "libomp")
@@ -128,3 +104,4 @@ rocm_install_targets(
   INCLUDE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+

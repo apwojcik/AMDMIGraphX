@@ -39,24 +39,24 @@ struct module;
 /**
  * capture inputs of operators to be quantized to int8
  */
-struct capture_arguments_pass
+struct MIGRAPHX_EXPORT capture_arguments_pass
 {
     std::vector<std::string> ins_names = {"dot", "convolution"};
     std::function<void(std::size_t, std::vector<argument>)> f{};
     std::size_t* param_index = nullptr;
     std::string name() const { return "capture_arguments"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 /**
  * quantize a program to int8
  */
-struct quantize_int8_pass
+struct MIGRAPHX_EXPORT quantize_int8_pass
 {
     std::vector<std::string> ins_names = {"dot", "convolution"};
     std::vector<std::pair<float, float>> quant_params;
     std::string name() const { return "quantize_int8"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

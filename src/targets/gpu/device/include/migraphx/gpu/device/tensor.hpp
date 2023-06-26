@@ -28,7 +28,8 @@
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu::device {
+namespace gpu {
+namespace device {
 
 template <index_int NDim>
 using hip_tensor_index = hip_array<index_int, NDim>;
@@ -67,6 +68,7 @@ struct hip_tensor_descriptor
     index_int strides[NDim] = {};
 };
 
+} // namespace device
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

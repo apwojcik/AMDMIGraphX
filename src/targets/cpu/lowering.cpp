@@ -22,40 +22,54 @@
  * THE SOFTWARE.
  */
 
+#include <migraphx/cpu/lowering.hpp>
+#if !defined(_MSC_VER)
+#include <migraphx/instruction.hpp>
+#include <migraphx/dfor.hpp>
+#include <migraphx/op/identity.hpp>
+#include <migraphx/op/convolution.hpp>
+#include <migraphx/op/deconvolution.hpp>
+#include <migraphx/op/quant_convolution.hpp>
+#include <migraphx/op/dot.hpp>
+#include <migraphx/op/quant_dot.hpp>
+#include <migraphx/op/elu.hpp>
+#include <migraphx/op/im2col.hpp>
+#include <migraphx/op/leaky_relu.hpp>
+#include <migraphx/op/logsoftmax.hpp>
+#include <migraphx/op/lrn.hpp>
+#include <migraphx/op/pad.hpp>
+#include <migraphx/op/pooling.hpp>
+#include <migraphx/op/softmax.hpp>
+#include <migraphx/op/argmax.hpp>
+#include <migraphx/op/argmin.hpp>
+#include <migraphx/op/rnn_var_sl_last_output.hpp>
+#include <migraphx/op/mod.hpp>
+#include <migraphx/op/fmod.hpp>
+#include <migraphx/shape_for_each.hpp>
+#include <migraphx/iterator_for.hpp>
+#include <migraphx/par_dfor.hpp>
+#include <migraphx/clamp.hpp>
+#include <migraphx/cpu/context.hpp>
+#include <migraphx/register_op.hpp>
+#include <migraphx/make_op.hpp>
+#endif
+#include <migraphx/program.hpp>
+#if !defined(_MSC_VER)
+#include <migraphx/tune_axis.hpp>
+#include <migraphx/match/layernorm.hpp>
+#include <migraphx/match/gelu_erf.hpp>
+#include <migraphx/match/gelu_tanh.hpp>
+#include <migraphx/matcher.hpp>
+#endif
 #include <unordered_map>
 #include <utility>
 #include <iostream>
-
-#include "migraphx/cpu/lowering.hpp"
-#if !defined(_MSC_VER)
-#include "migraphx/dfor.hpp"
-#include "migraphx/op/identity.hpp"
-#include "migraphx/op/convolution.hpp"
-#include "migraphx/op/im2col.hpp"
-#include "migraphx/op/pad.hpp"
-#include "migraphx/op/rnn_var_sl_last_output.hpp"
-#include "migraphx/op/mod.hpp"
-#include "migraphx/shape_for_each.hpp"
-#include "migraphx/iterator_for.hpp"
-#include "migraphx/par_dfor.hpp"
-#include "migraphx/clamp.hpp"
-#include "migraphx/cpu/context.hpp"
-#include "migraphx/register_op.hpp"
-#include "migraphx/make_op.hpp"
-#endif
-#include "migraphx/program.hpp"
-#if !defined(_MSC_VER)
-#include "migraphx/matcher.hpp"
-#include "migraphx/match/layernorm.hpp"
-#include "migraphx/match/gelu_erf.hpp"
-#include "migraphx/match/gelu_tanh.hpp"
-#endif
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
 namespace cpu {
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER)
 template <typename T>
 T zero(const T&)
 {
@@ -81,7 +95,7 @@ struct cpu_im2col
     }
 
     static std::string name() { return "cpu::im2col"; }
-    [[nodiscard]] shape compute_shape(const std::vector<shape>& inputs) const
+    shape compute_shape(const std::vector<shape>& inputs) const
     {
         return op.normalize_compute_shape(inputs);
     }
@@ -123,9 +137,7 @@ struct cpu_im2col
                          kernel_w)([&](std::size_t c, std::size_t koffset, std::size_t loffset) {
                         auto idx    = iinput + long(koffset) - kdiv2_h;
                         auto jdx    = jinput + long(loffset) - kdiv2_w;
-                        col(ldx, p) = ((idx < height) && (jdx < width))
-                                          ? input(0, c, idx, jdx)
-                                          : 0;
+                        col(ldx, p) = ((idx < height) && (jdx < width)) ? input(0, c, idx, jdx) : 0;
                         p++;
                     });
                 }
@@ -144,13 +156,13 @@ struct cpu_op
     {
         return migraphx::reflect(self.op, f);
     }
-    [[nodiscard]] static std::string name() { return "cpu::op"; }
-    [[nodiscard]] shape compute_shape(const std::vector<shape>& inputs) const { return op.compute_shape(inputs); }
+    std::string name() const { return "cpu::op"; }
+    shape compute_shape(const std::vector<shape>& inputs) const { return op.compute_shape(inputs); }
     argument compute(context&, const shape& output_shape, const std::vector<argument>& args) const
     {
         return op.compute(output_shape, args);
     }
-    [[nodiscard]] value to_value() const
+    value to_value() const
     {
         value v;
         v["name"]     = op.name();
@@ -179,8 +191,8 @@ struct cpu_pad
         return migraphx::reflect(self.op, f);
     }
 
-    [[nodiscard]] static std::string name() { return "cpu::pad"; }
-    [[nodiscard]] shape compute_shape(const std::vector<shape>& inputs) const { return op.compute_shape(inputs); }
+    std::string name() const { return "cpu::pad"; }
+    shape compute_shape(const std::vector<shape>& inputs) const { return op.compute_shape(inputs); }
     argument compute(context&, const shape& output_shape, std::vector<argument> args) const
     {
         assert(output_shape.standard());
@@ -216,14 +228,14 @@ struct cpu_rnn_var_sl_last_output
         return migraphx::reflect(self.op, f);
     }
 
-    [[nodiscard]] static std::string name() { return "cpu::rnn_var_sl_last_output"; }
+    std::string name() const { return "cpu::rnn_var_sl_last_output"; }
 
-    [[nodiscard]] shape compute_shape(std::vector<shape> inputs) const
+    shape compute_shape(std::vector<shape> inputs) const
     {
         return op.compute_shape(std::move(inputs));
     }
 
-    [[nodiscard]] argument compute(const shape& output_shape, std::vector<argument> args) const
+    argument compute(const shape& output_shape, std::vector<argument> args) const
     {
         argument result{output_shape};
         auto out_comp_lens = args[0].get_shape().lens();
@@ -385,7 +397,7 @@ struct cpu_apply
         }
     }
 
-    [[nodiscard]] instruction_ref apply_pow(instruction_ref ins) const
+    instruction_ref apply_pow(instruction_ref ins) const
     {
         auto beta = read_scalar<float>(ins->inputs()[1]);
         if(beta.empty())
@@ -396,7 +408,7 @@ struct cpu_apply
                        {ins->inputs().front()});
     }
 
-    [[nodiscard]] instruction_ref apply_pooling(instruction_ref ins) const
+    instruction_ref apply_pooling(instruction_ref ins) const
     {
         auto&& op = ins->get_operator();
         auto v    = op.to_value();
@@ -419,26 +431,26 @@ struct cpu_apply
         return {r.at<T>()};
     }
 
-    [[nodiscard]] instruction_ref replace(instruction_ref ins, const operation& op) const
+    instruction_ref replace(instruction_ref ins, const operation& op) const
     {
         return replace(ins, op, ins->inputs());
     }
 
-    [[nodiscard]] instruction_ref
+    instruction_ref
     replace(instruction_ref ins, const operation& op, std::vector<instruction_ref> inputs) const
     {
         inputs.push_back(insert_allocation(ins, ins->get_shape()));
         return modl->replace_instruction(ins, op, inputs);
     }
 
-    [[nodiscard]] instruction_ref insert_allocation(instruction_ref ins, const shape& s) const
+    instruction_ref insert_allocation(instruction_ref ins, const shape& s) const
     {
         return modl->insert_instruction(ins, make_op("allocate", {{"shape", to_value(s)}}));
     }
 };
 #endif
 
-void lowering::apply(module& m)
+void lowering::apply(module& m) const
 {
 #if !defined(_MSC_VER)
     cpu_apply{&m}.apply();

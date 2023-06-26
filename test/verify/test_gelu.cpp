@@ -22,11 +22,6 @@
  * THE SOFTWARE.
  */
 
-#ifdef _MSC_VER
-#define _USE_MATH_DEFINES
-#include <math.h>
-#endif
-
 #include "verify_program.hpp"
 #include <migraphx/program.hpp>
 #include <migraphx/generate.hpp>

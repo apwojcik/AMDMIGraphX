@@ -22,23 +22,23 @@
  * THE SOFTWARE.
  */
 
-#include <iostream>
-#include <unordered_map>
-#include <utility>
-
 #include <migraphx/ref/lowering.hpp>
 #include <migraphx/instruction.hpp>
 #include <migraphx/dfor.hpp>
 #include <migraphx/op/identity.hpp>
 #include <migraphx/op/convolution.hpp>
+#include <migraphx/op/deconvolution.hpp>
 #include <migraphx/op/quant_convolution.hpp>
 #include <migraphx/op/dot.hpp>
 #include <migraphx/op/quant_dot.hpp>
 #include <migraphx/op/im2col.hpp>
 #include <migraphx/op/logsoftmax.hpp>
+#include <migraphx/op/loop.hpp>
 #include <migraphx/op/lrn.hpp>
 #include <migraphx/op/pad.hpp>
 #include <migraphx/op/softmax.hpp>
+#include <migraphx/op/argmax.hpp>
+#include <migraphx/op/argmin.hpp>
 #include <migraphx/op/rnn_var_sl_last_output.hpp>
 #include <migraphx/shape_for_each.hpp>
 #include <migraphx/iterator_for.hpp>
@@ -49,6 +49,10 @@
 #include <migraphx/make_op.hpp>
 #include <migraphx/tune_axis.hpp>
 #include <migraphx/pad_calc.hpp>
+
+#include <unordered_map>
+#include <utility>
+#include <iostream>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -78,22 +82,22 @@ struct ref_lrn
         return migraphx::reflect(self.op, f);
     }
 
-    [[nodiscard]] static std::string name() { return "ref::lrn"; }
-    [[nodiscard]] shape compute_shape(const std::vector<shape>& inputs) const { return op.compute_shape(inputs); }
+    std::string name() const { return "ref::lrn"; }
+    shape compute_shape(const std::vector<shape>& inputs) const { return op.compute_shape(inputs); }
     argument compute(context&, shape output_shape, std::vector<argument> args) const
     {
         argument result{output_shape};
         visit_all(result, args[0])([&](auto output, auto input) {
-            auto n_batch{ output_shape.lens()[0] };
-            auto channels{ output_shape.lens()[1] };
-            auto height{ output_shape.lens()[2] };
-            auto width{ output_shape.lens()[3] };
-            auto alphaoverarea{ op.alpha / float(op.size) };
-            auto radius_lower{ (op.size - 1) / 2 };
-            auto radius_upper{ op.size / 2 + 1 };
+            auto n_batch       = output_shape.lens()[0];
+            auto channels      = output_shape.lens()[1];
+            auto height        = output_shape.lens()[2];
+            auto width         = output_shape.lens()[3];
+            auto alphaoverarea = op.alpha / float(op.size);
+            auto radius_lower  = (op.size - 1) / 2;
+            auto radius_upper  = op.size / 2 + 1;
 
             par_dfor(n_batch, height, width)([&](int b, int h, int w) {
-                float scale{};
+                float scale = 0;
                 dfor(channels)([&](int c) {
                     auto start = (c - radius_lower) < 0 ? 0 : (c - radius_lower);
                     auto end   = (c + radius_upper) > channels ? channels : (c + radius_upper);
@@ -122,7 +126,6 @@ void visit_quantize_impl(V&& v, T&& x, Ts&&... xs)
 template <class T, class... Ts>
 auto visit_quantize(T&& x, Ts&&... xs)
 {
-    // TODO: check the workaround is not disturbing Windows!!!
     return [&](auto v) {
         // Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70100
         visit_quantize_impl(v, x, xs...);
@@ -182,9 +185,7 @@ struct ref_im2col
                          kernel_w)([&](std::size_t c, std::size_t koffset, std::size_t loffset) {
                         auto idx    = iinput + long(koffset) - kdiv2_h;
                         auto jdx    = jinput + long(loffset) - kdiv2_w;
-                        col(ldx, p) = ((idx >= 0) && (idx < height) && (jdx >= 0) && (jdx < width))
-                                          ? input(0, c, idx, jdx)
-                                          : 0;
+                        col(ldx, p) = ((idx < height) && (jdx < width)) ? input(0, c, idx, jdx) : 0;
                         p++;
                     });
                 }
@@ -504,7 +505,7 @@ struct ref_apply
     }
 };
 
-void lowering::apply(module& m) { ref_apply{&m}.apply(); }
+void lowering::apply(module& m) const { ref_apply{&m}.apply(); }
 
 } // namespace ref
 } // namespace MIGRAPHX_INLINE_NS

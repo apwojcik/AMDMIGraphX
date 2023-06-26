@@ -36,10 +36,10 @@ struct module_pass_manager;
 /**
  * Runs several passes in a loop
  */
-struct optimize_module
+struct MIGRAPHX_EXPORT optimize_module
 {
     std::string name() const { return "optimize_module"; }
-    MIGRAPHX_EXPORT void apply(module_pass_manager& mpm) const;
+    void apply(module_pass_manager& mpm) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

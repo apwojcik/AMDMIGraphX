@@ -33,12 +33,10 @@ inline namespace MIGRAPHX_INLINE_NS {
 
 // Declare a cached environment variable
 #define MIGRAPHX_DECLARE_ENV_VAR(x)               \
-    struct env_variable_##x                       \
+    struct x                                      \
     {                                             \
         static const char* value() { return #x; } \
-    };                                            \
-                                                  \
-    inline constexpr auto x = env_variable_##x{};
+    }; // NOLINT
 
 MIGRAPHX_EXPORT bool enabled(const char* name);
 MIGRAPHX_EXPORT bool disabled(const char* name);

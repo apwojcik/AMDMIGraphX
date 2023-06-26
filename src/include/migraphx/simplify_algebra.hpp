@@ -35,10 +35,10 @@ struct module;
 /**
  * Simplify many algebraic instructions to more efficient versions.
  */
-struct simplify_algebra
+struct MIGRAPHX_EXPORT simplify_algebra
 {
     std::string name() const { return "simplify_algebra"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

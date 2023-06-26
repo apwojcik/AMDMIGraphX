@@ -46,13 +46,13 @@ std::function<F>
 compile_function(const std::string& src, const std::string& flags, const std::string& fname)
 {
     migraphx::src_compiler compiler;
-    compiler.flags  = flags + "-std=c++14 -fPIC -shared";
-#ifdef WIN32
-    compile.output = "simple.dll";
+    compiler.flags = flags + "-std=c++14 -fPIC -shared";
+#ifdef _WIN32
+    compiler.output = "simple.dll";
 #else
     compiler.output = "libsimple.so";
 #endif
-    migraphx::src_file f{ "main.cpp", src };
+    migraphx::src_file f{"main.cpp", src};
     auto image = compiler.compile({f});
     return migraphx::dynamic_loader{image}.get_function<F>(fname);
 }
@@ -84,9 +84,9 @@ TEST_CASE(generate_module)
 
     auto f = compile_module<float(float, float)>(m);
 
-    EXPECT(test::near_(f(2, 2), 2));
-    EXPECT(test::near_(f(10, 6), 4));
-    EXPECT(test::near_(f(1, 2), std::sqrt(3)));
+    EXPECT(test::make_near(f(2, 2), 2));
+    EXPECT(test::make_near(f(10, 6), 4));
+    EXPECT(test::make_near(f(1, 2), std::sqrt(3)));
 }
 
 TEST_CASE(generate_module_with_literals)
@@ -101,9 +101,9 @@ TEST_CASE(generate_module_with_literals)
 
     auto f = compile_module<float(float, float)>(m);
 
-    EXPECT(test::near_(f(1, 2), 2));
-    EXPECT(test::near_(f(9, 6), 4));
-    EXPECT(test::near_(f(0, 2), std::sqrt(3)));
+    EXPECT(test::make_near(f(1, 2), 2));
+    EXPECT(test::make_near(f(9, 6), 4));
+    EXPECT(test::make_near(f(0, 2), std::sqrt(3)));
 }
 
 int main(int argc, const char* argv[]) { test::run(argc, argv); }

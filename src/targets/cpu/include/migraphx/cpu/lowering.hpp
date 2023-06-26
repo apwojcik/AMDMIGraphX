@@ -24,17 +24,19 @@
 #ifndef MIGRAPHX_GUARD_RTGLIB_CPU_LOWERING_HPP
 #define MIGRAPHX_GUARD_RTGLIB_CPU_LOWERING_HPP
 
-#include <migraphx/config.hpp>
-#include <migraphx/program.hpp>
+#include <migraphx/cpu/context.hpp>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
+
+struct module;
+
 namespace cpu {
 
-struct lowering
+struct MIGRAPHX_CPU_EXPORT lowering
 {
-    static std::string name() { return "cpu::lowering"; }
-    static void apply(module& m);
+    std::string name() const { return "cpu::lowering"; }
+    void apply(module& m) const;
 };
 
 } // namespace cpu

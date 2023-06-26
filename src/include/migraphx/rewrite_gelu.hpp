@@ -36,10 +36,10 @@ struct module;
 /**
  * Rewrite gelu standard formula as the sigmoid approximation formula
  */
-struct rewrite_gelu
+struct MIGRAPHX_EXPORT rewrite_gelu
 {
     std::string name() const { return "rewrite_gelu"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

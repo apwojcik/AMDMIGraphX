@@ -23,10 +23,6 @@
  */
 
 #include <test.hpp>
-
-#define MIGRAPHX_STATIC_DEFINE
-#define MIGRAPHX_GPU_STATIC_DEFINE
-
 #include <migraphx/argument.hpp>
 #include <migraphx/gpu/hip.hpp>
 #include <migraphx/gpu/target.hpp>

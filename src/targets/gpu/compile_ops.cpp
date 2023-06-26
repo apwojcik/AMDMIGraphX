@@ -185,7 +185,7 @@ void par_compile(std::size_t n, F f)
 {
     if(n == 0)
         return;
-    par_for(n, n / value_of(MIGRAPHX_GPU_COMPILE_PARALLEL, n), f);
+    par_for(n, n / value_of(MIGRAPHX_GPU_COMPILE_PARALLEL{}, n), f);
 }
 
 struct compile_manager

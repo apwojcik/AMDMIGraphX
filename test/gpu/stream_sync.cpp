@@ -24,10 +24,6 @@
 
 #include <iostream>
 #include <vector>
-
-#define MIGRAPHX_STATIC_DEFINE
-#define MIGRAPHX_GPU_STATIC_DEFINE
-
 #include <migraphx/register_target.hpp>
 #include <migraphx/gpu/context.hpp>
 #include <migraphx/context.hpp>
@@ -68,7 +64,7 @@ int main() {}
 
 migraphx::src_file make_src_file(const std::string& name, const std::string& content)
 {
-    return { name, content };
+    return {name, content};
 }
 
 hip_stream_ptr get_stream()

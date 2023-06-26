@@ -39,10 +39,10 @@ struct module;
  * Process negative axis attributes of ops
  */
 
-struct normalize_ops
+struct MIGRAPHX_EXPORT normalize_ops
 {
     std::string name() const { return "normalize_ops"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

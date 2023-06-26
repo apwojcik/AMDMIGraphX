@@ -36,10 +36,10 @@ struct module;
 /**
  * Remove identical instructions.
  */
-struct eliminate_common_subexpression
+struct MIGRAPHX_EXPORT eliminate_common_subexpression
 {
     std::string name() const { return "eliminate_common_subexpression"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

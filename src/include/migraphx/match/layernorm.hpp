@@ -37,7 +37,7 @@ struct layernorm_matcher
 {
     F f;
 
-    [[nodiscard]] auto last_axis() const
+    auto last_axis() const
     {
         return make_basic_pred_matcher([](instruction_ref ins) {
             auto v = ins->get_operator().to_value();
@@ -50,14 +50,14 @@ struct layernorm_matcher
         });
     }
 
-    [[nodiscard]] auto reduce_mean() const { return f("reduce_mean")(last_axis()); }
+    auto reduce_mean() const { return f("reduce_mean")(last_axis()); }
 
-    [[nodiscard]] auto x_minus_mean() const
+    auto x_minus_mean() const
     {
         return f("sub")(arg(0)(any().bind("x")), arg(1)(skip_broadcasts(reduce_mean())));
     }
 
-    [[nodiscard]] auto variance() const
+    auto variance() const
     {
         return reduce_mean()(arg(0)(any_of(
             f("pow")(arg(0)(x_minus_mean()), arg(1)(has_value(2.0f))),
@@ -65,20 +65,20 @@ struct layernorm_matcher
             f("sqdiff")(either_arg(0, 1)(any().bind("x"), skip_broadcasts(reduce_mean()))))));
     }
 
-    [[nodiscard]] auto sqrt_add_eps(const std::string& name) const
+    auto sqrt_add_eps(const std::string& name) const
     {
         auto add_eps = f("add")(either_arg(0, 1)(variance(), is_constant().bind("eps")));
         return skip_broadcasts(f(name)(arg(0)(any_of(add_eps, variance()))));
     }
 
-    [[nodiscard]] auto layernorm_onnx() const
+    auto layernorm_onnx() const
     {
         auto div_sqrt  = f("div")(arg(0)(x_minus_mean()), arg(1)(sqrt_add_eps("sqrt")));
         auto mul_rsqrt = f("mul")(either_arg(0, 1)(x_minus_mean(), sqrt_add_eps("rsqrt")));
         return any(any_of(div_sqrt, mul_rsqrt));
     }
 
-    [[nodiscard]] auto matcher() const { return layernorm_onnx(); }
+    auto matcher() const { return layernorm_onnx(); }
 };
 } // namespace detail
 

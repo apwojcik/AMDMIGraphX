@@ -31,11 +31,11 @@
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
 
-MIGRAPHX_EXPORT bool
-verify_args(const std::string& name,
-            const argument& ref_arg,
-            const argument& target_arg,
-            double tolerance = 80);
+MIGRAPHX_EXPORT
+bool verify_args(const std::string& name,
+                 const argument& ref_arg,
+                 const argument& target_arg,
+                 double tolerance = 80);
 
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

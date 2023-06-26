@@ -40,7 +40,7 @@ struct add : binary<add>
         return a;
     }
     std::string point_function() const { return "+"; }
-    static auto apply()
+    auto apply() const
     {
         return [](auto x, auto y) { return x + y; };
     }

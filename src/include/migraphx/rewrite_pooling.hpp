@@ -35,10 +35,10 @@ struct module;
 /**
  * Rewrite pooling to reduce_mean
  */
-struct rewrite_pooling
+struct MIGRAPHX_EXPORT rewrite_pooling
 {
     std::string name() const { return "rewrite_pooling"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

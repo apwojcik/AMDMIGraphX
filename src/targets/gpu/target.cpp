@@ -76,11 +76,10 @@ MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_DISABLE_SCHEDULE_PASS)
 MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_DISABLE_REDUCE_FUSION)
 MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_ENABLE_NHWC)
 MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_ENABLE_CK)
-MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_DISABLE_FAST_GELU)
 
 struct id_pass
 {
-    static std::string name() { return "id"; }
+    std::string name() const { return "id"; }
     void apple(const module&) const {}
 };
 
@@ -91,7 +90,7 @@ pass enable_pass(bool enabled, pass p)
     return id_pass{};
 }
 
-std::vector<pass> target::get_passes(migraphx::context& gctx, const compile_options& options)
+std::vector<pass> target::get_passes(migraphx::context& gctx, const compile_options& options) const
 {
     auto& ctx = any_cast<context>(gctx);
     ctx.set_exhaustive_tune_flag(options.exhaustive_tune);
@@ -125,9 +124,9 @@ std::vector<pass> target::get_passes(migraphx::context& gctx, const compile_opti
         inline_module{},
         rewrite_pooling{},
         dead_code_elimination{},
-        enable_pass(not enabled(MIGRAPHX_DISABLE_FAST_GELU{}), rewrite_gelu{}),
+        enable_pass(options.fast_math, rewrite_gelu{}),
         optimize_module{},
-        enable_pass(enabled(MIGRAPHX_ENABLE_NHWC), layout_nhwc{}),
+        enable_pass(enabled(MIGRAPHX_ENABLE_NHWC{}), layout_nhwc{}),
         dead_code_elimination{},
         prefuse_ops{},
         dead_code_elimination{},
@@ -135,7 +134,7 @@ std::vector<pass> target::get_passes(migraphx::context& gctx, const compile_opti
         optimize_module{},
         fuse_pointwise{},
         dead_code_elimination{},
-        enable_pass(not enabled(MIGRAPHX_DISABLE_REDUCE_FUSION), fuse_reduce{}),
+        enable_pass(not enabled(MIGRAPHX_DISABLE_REDUCE_FUSION{}), fuse_reduce{}),
         dead_code_elimination{},
         enable_pass(enabled(MIGRAPHX_ENABLE_CK{}), fuse_ck{}),
         dead_code_elimination{},
@@ -161,7 +160,7 @@ std::vector<pass> target::get_passes(migraphx::context& gctx, const compile_opti
         promote_literals{},
         dead_code_elimination{},
         write_literals{&ctx},
-        schedule{gpu::schedule_model{ctx.get_current_device().nstreams()}, not enabled(MIGRAPHX_DISABLE_SCHEDULE_PASS)},
+        schedule{gpu::schedule_model{ctx.get_current_device().nstreams()}, not enabled(MIGRAPHX_DISABLE_SCHEDULE_PASS{})},
         memory_coloring{"hip::allocate"},
         sync_device{},
         preallocate_param{"scratch", gpu_allocation_model{}},
@@ -175,15 +174,15 @@ std::vector<pass> target::get_passes(migraphx::context& gctx, const compile_opti
     // clang-format on
 }
 
-std::string target::name() { return "gpu"; }
+std::string target::name() const { return "gpu"; }
 
-migraphx::context target::get_context() { return context(gpu::get_device_id()); }
+migraphx::context target::get_context() const { return context(gpu::get_device_id()); }
 
-argument target::copy_to(const argument& arg) { return gpu::to_gpu(arg); }
+argument target::copy_to(const argument& arg) const { return gpu::to_gpu(arg); }
 
-argument target::copy_from(const argument& arg) { return gpu::from_gpu(arg); }
+argument target::copy_from(const argument& arg) const { return gpu::from_gpu(arg); }
 
-argument target::allocate(const shape& s) { return gpu::allocate_gpu(s); }
+argument target::allocate(const shape& s) const { return gpu::allocate_gpu(s); }
 
 MIGRAPHX_REGISTER_TARGET(target);
 

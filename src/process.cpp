@@ -27,11 +27,12 @@
 #include <functional>
 #include <iostream>
 
-#if defined(__linux__)
-#include <unistd.h>
-#elif defined(_WIN32)
+#ifdef _WIN32
+// cppcheck-suppress definePrefix
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#else
+#include <unistd.h>
 #endif
 
 namespace migraphx {
@@ -39,13 +40,13 @@ inline namespace MIGRAPHX_INLINE_NS {
 
 MIGRAPHX_DECLARE_ENV_VAR(MIGRAPHX_TRACE_CMD_EXECUTE)
 
-#if defined(__linux__)
+#ifndef _WIN32
 
 template <class F>
 int exec(const std::string& cmd, const char* type, F f)
 {
     int ec = 0;
-    if(enabled(MIGRAPHX_TRACE_CMD_EXECUTE))
+    if(enabled(MIGRAPHX_TRACE_CMD_EXECUTE{}))
         std::cout << cmd << std::endl;
     auto closer = [&](FILE* stream) {
         auto status = pclose(stream);
@@ -74,22 +75,22 @@ int exec(const std::string& cmd)
 int exec(const std::string& cmd, std::function<void(process::writer)> std_in)
 {
     return exec(cmd, "w", [&](FILE* f) {
-       std_in([&](const char* buffer, std::size_t n) { std::fwrite(buffer, 1, n, f); });
+        std_in([&](const char* buffer, std::size_t n) { std::fwrite(buffer, 1, n, f); });
     });
 }
 
-#elif defined(_WIN32)
+#else
 
-#define BUFSIZE 4096
+#define MIGRAPHX_PROCESS_BUFSIZE 4096
 
 class pipe
 {
-public:
+    public:
     explicit pipe(bool inherit_handle = true)
     {
         SECURITY_ATTRIBUTES attrs;
-        attrs.nLength = sizeof(SECURITY_ATTRIBUTES);
-        attrs.bInheritHandle = inherit_handle ? TRUE : FALSE;
+        attrs.nLength              = sizeof(SECURITY_ATTRIBUTES);
+        attrs.bInheritHandle       = inherit_handle ? TRUE : FALSE;
         attrs.lpSecurityDescriptor = nullptr;
 
         if(CreatePipe(&hRead_, &hWrite_, &attrs, 0) == FALSE)
@@ -105,10 +106,7 @@ public:
         close_read_handle();
     }
 
-    HANDLE get_read_handle() const
-    {
-        return hRead_;
-    }
+    HANDLE get_read_handle() const { return hRead_; }
 
     void close_read_handle()
     {
@@ -119,10 +117,7 @@ public:
         }
     }
 
-    HANDLE get_write_handle() const
-    {
-        return hWrite_;
-    }
+    HANDLE get_write_handle() const { return hWrite_; }
 
     void close_write_handle()
     {
@@ -133,15 +128,15 @@ public:
         }
     }
 
-private:
-    HANDLE hWrite_{ nullptr }, hRead_{ nullptr };
+    private:
+    HANDLE hWrite_{nullptr}, hRead_{nullptr};
 };
 
 int exec(const std::string& cmd)
 {
     try
     {
-        if(enabled(MIGRAPHX_TRACE_CMD_EXECUTE))
+        if(enabled(MIGRAPHX_TRACE_CMD_EXECUTE{}))
             std::cout << cmd << std::endl;
 
         pipe stdin_{}, stdout_{};
@@ -150,63 +145,43 @@ int exec(const std::string& cmd)
         PROCESS_INFORMATION processInfo;
 
         ZeroMemory(&info, sizeof(STARTUPINFO));
-        info.cb = sizeof(STARTUPINFO);
-        info.hStdError = stdout_.get_write_handle();
+        info.cb         = sizeof(STARTUPINFO);
+        info.hStdError  = stdout_.get_write_handle();
         info.hStdOutput = stdout_.get_write_handle();
-        info.hStdInput = stdin_.get_read_handle();
+        info.hStdInput  = stdin_.get_read_handle();
         info.dwFlags |= STARTF_USESTDHANDLES;
 
         ZeroMemory(&processInfo, sizeof(processInfo));
 
-        LPSTR lpCmdLn{
-            const_cast<LPSTR>(cmd.c_str())
-        };
+        LPSTR lpCmdLn{const_cast<LPSTR>(cmd.c_str())};
 
         BOOL bSuccess = CreateProcess(
-            nullptr,
-            lpCmdLn,
-            nullptr,
-            nullptr,
-            TRUE,
-            0,
-            nullptr,
-            nullptr,
-            &info,
-            &processInfo);
+            nullptr, lpCmdLn, nullptr, nullptr, TRUE, 0, nullptr, nullptr, &info, &processInfo);
 
-        if (bSuccess == FALSE)
+        if(bSuccess == FALSE)
             return GetLastError();
 
         DWORD dwRead, dwWritten;
-        TCHAR chBuf[BUFSIZE];
-        HANDLE hStdOut{ GetStdHandle(STD_OUTPUT_HANDLE) };
+        TCHAR chBuf[MIGRAPHX_PROCESS_BUFSIZE];
+        HANDLE hStdOut{GetStdHandle(STD_OUTPUT_HANDLE)};
 
-        for (;;)
+        for(;;)
         {
             BOOL bRead = ReadFile(
-                stdout_.get_read_handle(),
-                chBuf,
-                BUFSIZE,
-                &dwRead,
-                nullptr);
+                stdout_.get_read_handle(), chBuf, MIGRAPHX_PROCESS_BUFSIZE, &dwRead, nullptr);
 
-            if (bRead == FALSE)
+            if(bRead == FALSE)
             {
                 if(GetLastError() != ERROR_MORE_DATA)
                     break;
             }
 
-            if (dwRead == 0)
+            if(dwRead == 0)
                 break;
 
-            BOOL bWrite = WriteFile(
-                hStdOut,
-                chBuf,
-                dwRead,
-                &dwWritten,
-                nullptr);
+            BOOL bWrite = WriteFile(hStdOut, chBuf, dwRead, &dwWritten, nullptr);
 
-            if (bWrite == FALSE)
+            if(bWrite == FALSE)
                 break;
         }
 
@@ -220,27 +195,27 @@ int exec(const std::string& cmd)
 
         return static_cast<int>(status);
     }
-    catch (DWORD lastError)
+    // cppcheck-suppress catchExceptionByValue
+    catch(DWORD lastError)
     {
         return lastError;
     }
 }
 
-#else
-#error Unsupported target operating system!
 #endif
 
 struct process_impl
 {
-    std::string command;
-    fs::path cwd;
+    std::string command{};
+    fs::path cwd{};
 
-    [[nodiscard]] std::string get_command() const
+    std::string get_command() const
     {
         std::string result;
-        if(!cwd.empty())
-            result += "cd " + cwd.string() + "&& ";
-        return result + command;
+        if(not cwd.empty())
+            result += "cd " + cwd.string() + "; ";
+        result += command;
+        return result;
     }
 
     template <class... Ts>
@@ -278,11 +253,11 @@ void process::exec() { impl->check_exec(impl->get_command()); }
 
 void process::write(std::function<void(process::writer)> pipe_in)
 {
-    impl->check_exec(impl->get_command()
-#ifndef WIN32
-                     , std::move(pipe_in)
+#ifdef _WIN32
+    impl->check_exec(impl->get_command());
+#else
+    impl->check_exec(impl->get_command(), std::move(pipe_in));
 #endif
-                     );
 }
 
 } // namespace MIGRAPHX_INLINE_NS

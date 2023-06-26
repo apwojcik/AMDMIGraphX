@@ -35,10 +35,10 @@ struct module;
 /**
  * Rewrite quantization ops to equivalent operators
  */
-struct rewrite_quantization
+struct MIGRAPHX_EXPORT rewrite_quantization
 {
     std::string name() const { return "rewrite_quantization"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

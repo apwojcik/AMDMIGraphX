@@ -29,7 +29,6 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
-
 #include <migraphx/functional.hpp>
 #include <migraphx/config.hpp>
 #include <migraphx/rank.hpp>
@@ -85,7 +84,7 @@ void module_pass_manager_apply(const T& x, module_pass_manager& mpm)
 #ifdef TYPE_ERASED_DECLARATION
 
 // Type-erased interface for:
-struct pass
+struct MIGRAPHX_EXPORT pass
 {
     //
     std::string name() const;

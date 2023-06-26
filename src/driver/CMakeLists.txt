@@ -22,7 +22,7 @@
 # THE SOFTWARE.
 #####################################################################################
 
-add_executable(driver
+add_executable(driver 
     main.cpp
     verify.cpp
     perf.cpp
@@ -41,10 +41,11 @@ add_custom_command(
         BYPRODUCTS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/driver
 )
 set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/driver)
+target_compile_options(driver PRIVATE -Wno-ignored-attributes -Wno-unused-parameter)
+rocm_clang_tidy_check(driver)
 
-if(CLANG_TIDY_EXE)
-    rocm_clang_tidy_check(driver)
-endif()
+target_link_libraries(driver migraphx_all_targets migraphx_onnx migraphx_tf)
 
-target_link_libraries(driver PRIVATE migraphx migraphx_onnx migraphx_tf)
-rocm_install_targets(TARGETS driver)
+rocm_install_targets(
+  TARGETS driver
+)

@@ -22,10 +22,6 @@
  * THE SOFTWARE.
  */
 #include <test.hpp>
-
-#define MIGRAPHX_STATIC_DEFINE
-#define MIGRAPHX_GPU_STATIC_DEFINE
-
 #include <basic_ops.hpp>
 #include <migraphx/program.hpp>
 #include <migraphx/instruction.hpp>

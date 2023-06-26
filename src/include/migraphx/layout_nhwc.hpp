@@ -36,10 +36,10 @@ struct module_pass_manager;
 /**
  * Transform convolutions to nhwc
  */
-struct layout_nhwc
+struct MIGRAPHX_EXPORT layout_nhwc
 {
     std::string name() const { return "layout_nhwc"; }
-    MIGRAPHX_EXPORT void apply(module_pass_manager& mpm) const;
+    void apply(module_pass_manager& mpm) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

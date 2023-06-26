@@ -220,11 +220,15 @@ compile_hip_src(const std::vector<src_file>& srcs, std::string params, const std
         {
             if(src.path.extension() != ".cpp")
                 continue;
-            std::cout << std::string(src.content.first, src.len()) << std::endl;
+            std::cout << std::string(src.content) << std::endl;
         }
     }
+#ifdef _WIN32
+    fs::path driver{"migraphx-hiprtc-driver.exe"};
+#else
     auto p      = dynamic_loader::path(&compile_hip_src_with_hiprtc);
     auto driver = p.parent_path().parent_path() / "bin" / "migraphx-hiprtc-driver";
+#endif
 
     if(fs::exists(driver))
     {
@@ -256,15 +260,19 @@ std::vector<std::vector<char>> compile_hip_src_with_hiprtc(std::vector<hiprtc_sr
 
 bool is_hip_clang_compiler()
 {
-    static const auto result = ends_with(MIGRAPHX_STRINGIZE(MIGRAPHX_HIP_COMPILER), "clang++");
+    static const auto result = fs::path{MIGRAPHX_HIP_COMPILER}.stem() == "clang++";
     return result;
 }
 
+#ifdef MIGRAPHX_HIP_COMPILER_LAUNCHER
+
 bool has_compiler_launcher()
 {
-    static const auto result = fs::exists(MIGRAPHX_STRINGIZE(MIGRAPHX_HIP_COMPILER_LAUNCHER));
+    static const auto result = fs::exists(MIGRAPHX_HIP_COMPILER_LAUNCHER);
     return result;
 }
+
+#endif
 
 src_compiler assemble(src_compiler compiler)
 {
@@ -278,43 +286,42 @@ compile_hip_src(const std::vector<src_file>& srcs, std::string params, const std
 {
     assert(not srcs.empty());
     if(not is_hip_clang_compiler())
-        MIGRAPHX_THROW("Unknown hip compiler: " +
-                       std::string(MIGRAPHX_STRINGIZE(MIGRAPHX_HIP_COMPILER)));
+        MIGRAPHX_THROW("Unknown hip compiler: " MIGRAPHX_HIP_COMPILER);
 
     if(params.find("-std=") == std::string::npos)
         params += " --std=c++17";
     params += " -fno-gpu-rdc";
-    if(enabled(MIGRAPHX_GPU_DEBUG_SYM))
+    if(enabled(MIGRAPHX_GPU_DEBUG_SYM{}))
         params += " -g";
     params += " -c";
     params += " --offload-arch=" + arch;
     params += " --cuda-device-only";
-    params += " -O" + string_value_of(MIGRAPHX_GPU_OPTIMIZE, "3") + " ";
+    params += " -O" + string_value_of(MIGRAPHX_GPU_OPTIMIZE{}, "3") + " ";
 
-    if(enabled(MIGRAPHX_GPU_DEBUG))
+    if(enabled(MIGRAPHX_GPU_DEBUG{}))
         params += " -DMIGRAPHX_DEBUG";
 
     params += " -Wno-unused-command-line-argument -Wno-cuda-compat ";
-    params += MIGRAPHX_STRINGIZE(MIGRAPHX_HIP_COMPILER_FLAGS);
+    params += MIGRAPHX_HIP_COMPILER_FLAGS;
 
     src_compiler compiler;
     compiler.flags    = params;
-    compiler.compiler = MIGRAPHX_STRINGIZE(MIGRAPHX_HIP_COMPILER);
+    compiler.compiler = MIGRAPHX_HIP_COMPILER;
 #ifdef MIGRAPHX_HIP_COMPILER_LAUNCHER
     if(has_compiler_launcher())
-        compiler.launcher = MIGRAPHX_STRINGIZE(MIGRAPHX_HIP_COMPILER_LAUNCHER);
+        compiler.launcher = MIGRAPHX_HIP_COMPILER_LAUNCHER;
 #endif
-    if(enabled(MIGRAPHX_GPU_DUMP_SRC))
+    if(enabled(MIGRAPHX_GPU_DUMP_SRC{}))
     {
         for(const auto& src : srcs)
         {
             if(src.path.extension() != ".cpp")
                 continue;
-            std::cout << std::string{ src.content } << std::endl;
+            std::cout << std::string(src.content) << std::endl;
         }
     }
 
-    if(enabled(MIGRAPHX_GPU_DUMP_ASM))
+    if(enabled(MIGRAPHX_GPU_DUMP_ASM{}))
     {
 
         std::cout << assemble(compiler).compile(srcs).data() << std::endl;

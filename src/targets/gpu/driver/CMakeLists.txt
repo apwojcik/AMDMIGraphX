@@ -24,20 +24,15 @@
 
 add_executable(migraphx_gpu_driver
         action.cpp
-        include/migraphx/gpu/driver/action.hpp
         compile_op.cpp
         main.cpp
         parser.cpp
-        include/migraphx/gpu/driver/parser.hpp
-        perf.cpp
-        include/migraphx/gpu/driver/perf.hpp
         run_op.cpp)
 
 set_target_properties(migraphx_gpu_driver PROPERTIES OUTPUT_NAME migraphx-gpu-driver)
 
-if(CLANG_TIDY_EXE)
-    rocm_clang_tidy_check(migraphx_gpu_driver)
-endif()
+rocm_clang_tidy_check(migraphx_gpu_driver)
 
-target_include_directories(migraphx_gpu_driver PRIVATE include ${CMAKE_BINARY_DIR}/include)
+target_include_directories(migraphx_gpu_driver PRIVATE include)
 target_link_libraries(migraphx_gpu_driver PRIVATE migraphx MIOpen migraphx_gpu hip::device)
+target_compile_options(migraphx_gpu_driver PRIVATE -Wno-ignored-attributes -Wno-option-ignored)

@@ -37,12 +37,12 @@ struct module;
 /**
  * Schedule instructions for concurrent execution
  */
-struct schedule
+struct MIGRAPHX_EXPORT schedule
 {
     schedule_model model{};
     bool enable = true;
     std::string name() const { return "schedule"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

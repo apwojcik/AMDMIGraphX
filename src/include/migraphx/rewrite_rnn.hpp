@@ -39,10 +39,10 @@ struct module;
 /**
  * Rewrite rnn to gemm and add.
  */
-struct rewrite_rnn
+struct MIGRAPHX_EXPORT rewrite_rnn
 {
     std::string name() const { return "rewrite_rnn"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 
     private:
     // for vanilla rnn operators

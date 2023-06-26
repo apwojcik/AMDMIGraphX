@@ -294,10 +294,10 @@ std::string as_string(Iterator start, Iterator last)
 template <class F>
 auto make_function(const std::string& name, F f)
 {
-    return [name, f](auto&&... xs) {
-        std::vector<std::string> args{ as_string(xs)... };
+    return [=](auto&&... xs) {
+        std::vector<std::string> args = {as_string(xs)...};
         return make_predicate(name + "(" + as_string(args.begin(), args.end()) + ")",
-                              [f, xs...] { return f(xs...); });
+                              [=] { return f(xs...); });
     };
 }
 
@@ -384,9 +384,10 @@ bool throws(F f, const std::string& msg = "")
 }
 
 template <class T, class U>
-auto near_(T px, U py, double ptol = 1e-6f)
+auto make_near(T px, U py, double ptol = 1e-6f)
 {
-    return make_function("near", [](auto x, auto y, auto tol) { return std::abs(x - y) < tol; })(px, py, ptol);
+    return make_function("near", [](auto x, auto y, auto tol) { return std::abs(x - y) < tol; })(
+        px, py, ptol);
 }
 
 using string_map = std::unordered_map<std::string, std::vector<std::string>>;

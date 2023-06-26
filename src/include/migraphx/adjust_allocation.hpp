@@ -32,11 +32,11 @@ inline namespace MIGRAPHX_INLINE_NS {
 
 struct module;
 
-struct adjust_allocation
+struct MIGRAPHX_EXPORT adjust_allocation
 {
     allocation_model model;
     std::string name() const { return "adjust_allocation"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

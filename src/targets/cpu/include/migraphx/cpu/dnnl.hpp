@@ -109,13 +109,13 @@ struct dnnl_op : auto_register_op<Derived>
         return reflect_base(self, f);
     }
 
-    [[nodiscard]] std::string group() const
+    std::string group() const
     {
         const auto& self = static_cast<const Derived&>(*this);
         return self.name();
     }
 
-    [[nodiscard]] value attributes() const
+    value attributes() const
     {
         std::vector<std::string> names;
         std::transform(post_ops.begin(), post_ops.end(), std::back_inserter(names), [](auto&& op) {
@@ -128,7 +128,7 @@ struct dnnl_op : auto_register_op<Derived>
         return {{"group", g}};
     }
 
-    [[nodiscard]] std::size_t get_extra_post_op_args() const
+    std::size_t get_extra_post_op_args() const
     {
         return std::count_if(post_ops.begin(), post_ops.end(), [](const auto& po) {
             return contains(po.algo, "binary");
@@ -161,14 +161,13 @@ struct dnnl_op : auto_register_op<Derived>
         return str == nullptr ? "" : str;
     }
     // Map arg index to arg in dnnl
-    [[nodiscard]] std::vector<int> arg_map(int size) const
+    std::vector<int> arg_map(int size) const
     {
         std::vector<int> result(size);
         std::iota(result.begin(), result.end(), MIGRAPHX_DNNL_PREFIX(ARG_SRC_0));
         return result;
     }
-
-    [[nodiscard]] shape base_adjust_shape(const shape& s, const shape& output) const
+    shape base_adjust_shape(const shape& s, const shape& output) const
     {
         if(s.broadcasted())
         {
@@ -206,13 +205,11 @@ struct dnnl_op : auto_register_op<Derived>
             i++;
         }
     }
-
-    [[nodiscard]] shape adjust_shape(const shape& s, int, const shape& output) const
+    shape adjust_shape(const shape& s, int, const shape& output) const
     {
         return base_adjust_shape(s, output);
     }
-
-    [[nodiscard]] std::vector<int> create_arg_map(std::size_t input_size) const
+    std::vector<int> create_arg_map(std::size_t input_size) const
     {
         const auto& self     = static_cast<const Derived&>(*this);
         auto npost_ops       = get_extra_post_op_args();
@@ -225,8 +222,7 @@ struct dnnl_op : auto_register_op<Derived>
         });
         return m;
     }
-
-    [[nodiscard]] std::unordered_map<int, dnnl::memory::desc>
+    std::unordered_map<int, dnnl::memory::desc>
     to_memory_desc(const shape& output_shape, const std::vector<shape>& inputs) const
     {
         const auto& self = static_cast<const Derived&>(*this);
@@ -241,8 +237,7 @@ struct dnnl_op : auto_register_op<Derived>
         }
         return result;
     }
-
-    [[nodiscard]] dnnl::primitive_attr
+    dnnl::primitive_attr
     get_primitive_attr(const std::unordered_map<int, dnnl::memory::desc>& m) const
     {
         dnnl::primitive_attr result;
@@ -287,7 +282,7 @@ struct dnnl_op : auto_register_op<Derived>
         return execute(ctx, args);
     }
 
-    [[nodiscard]] std::ptrdiff_t output_alias(const std::vector<shape>& shapes) const
+    std::ptrdiff_t output_alias(const std::vector<shape>& shapes) const
     {
         return static_cast<std::ptrdiff_t>(shapes.size() - 1);
     }
@@ -305,34 +300,54 @@ struct dnnl_op : auto_register_op<Derived>
     {
         // Compensate for allocation
         inputs.pop_back();
-        auto md          = to_memory_desc(output_shape, inputs);
-        auto prim        = get_primitive(md);
-        auto arg_lookup  = create_arg_map(inputs.size());
-
+        auto md         = to_memory_desc(output_shape, inputs);
+        auto prim       = get_primitive(md);
+        auto arg_lookup = create_arg_map(inputs.size());
 #ifndef NDEBUG
-        execute = std::bind(&dnnl_op::execute_impl_, this, output_shape, inputs, md, prim,
-                            arg_lookup, std::placeholders::_1, std::placeholders::_2);
+        // NOLINTNEXTLINE
+        execute = std::bind(&dnnl_op::internal,
+                            this,
+                            output_shape,
+                            inputs,
+                            md,
+                            prim,
+                            arg_lookup,
+                            std::placeholders::_1,
+                            std::placeholders::_2);
 #else
-        execute = std::bind(&dnnl_op::execute_impl_, this, md, prim, arg_lookup,
-                            std::placeholders::_1, std::placeholders::_2);
+        // NOLINTNEXTLINE
+        execute = std::bind(&dnnl_op::internal,
+                            this,
+                            md,
+                            prim,
+                            arg_lookup,
+                            std::placeholders::_1,
+                            std::placeholders::_2);
 #endif
     }
 
-    [[nodiscard]] std::vector<shape> trim_post_op_inputs(const std::vector<shape>& inputs) const
+    std::vector<shape> trim_post_op_inputs(const std::vector<shape>& inputs) const
     {
         auto prim_input_size = inputs.size() - this->get_extra_post_op_args();
         return {inputs.begin(), inputs.begin() + prim_input_size};
     }
 
-private:
+    private:
 #ifndef NDEBUG
-    argument execute_impl_(const shape& output_shape, const std::vector<shape>& inputs,
-                           std::unordered_map<int, dnnl::memory::desc> md, Primitive prim,
-                           std::vector<int> arg_lookup, context&, const std::vector<argument>& args)
+    argument internal(const shape& output_shape,
+                      const std::vector<shape>& inputs,
+                      std::unordered_map<int, dnnl::memory::desc> md,
+                      Primitive prim,
+                      std::vector<int> arg_lookup,
+                      context&,
+                      const std::vector<argument>& args)
 #else
-    argument execute_impl_(std::unordered_map<int, dnnl::memory::desc> md, Primitive prim,
-                           std::vector<int> arg_lookup, context&, const std::vector<argument>& args)
- #endif
+    argument internal(std::unordered_map<int, dnnl::memory::desc> md,
+                      Primitive prim,
+                      std::vector<int> arg_lookup,
+                      context&,
+                      const std::vector<argument>& args)
+#endif
     {
 #ifndef NDEBUG
         const auto& self = static_cast<const Derived&>(*this);
@@ -359,10 +374,9 @@ private:
         int j                = 0;
         for(int i = 0; i < pos.len(); i++)
         {
-            auto arg  = j + prim_input_size;
-            auto kind = pos.kind(i);
-            std::string mesg =
-                "Post op " + std::to_string(i) + "@" + std::to_string(arg) + ": ";
+            auto arg         = j + prim_input_size;
+            auto kind        = pos.kind(i);
+            std::string mesg = "Post op " + std::to_string(i) + "@" + std::to_string(arg) + ": ";
             try
             {
                 dnnl::algorithm algo;
@@ -374,8 +388,8 @@ private:
                 {
                     pos.get_params_binary(i, algo, mdesc);
                     if(mdesc != md.at(arg_lookup.at(arg)))
-                        MIGRAPHX_THROW(mesg +
-                                       "Memory descriptor doesn't match for binary post op");
+                        MIGRAPHX_THROW(mesg + "Memory descriptor doesn't match for binary "
+                                              "post op");
                     j++;
                 }
                 else if(kind == dnnl::primitive::kind::eltwise)
@@ -425,8 +439,8 @@ struct dnnl_extend_op : dnnl_op<Derived, Primitive>
     // dnnl has some issues with non-packed inputs
     void required(const check_shapes& cs) const { cs.packed_or_broadcasted(); }
 
-    [[nodiscard]] std::string name() const { return "dnnl::" + op.name(); }
-    [[nodiscard]] shape compute_shape(std::vector<shape> inputs) const
+    std::string name() const { return "dnnl::" + op.name(); }
+    shape compute_shape(std::vector<shape> inputs) const
     {
         const auto& self = static_cast<const Derived&>(*this);
         // Compensate for allocation

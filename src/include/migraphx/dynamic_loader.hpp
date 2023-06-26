@@ -35,23 +35,26 @@ inline namespace MIGRAPHX_INLINE_NS {
 
 struct dynamic_loader_impl;
 
-struct dynamic_loader
+struct MIGRAPHX_EXPORT dynamic_loader
 {
+#ifndef _WIN32
     template <class T>
     static fs::path path(T* address)
     {
         return path(reinterpret_cast<void*>(address));
     }
     static fs::path path(void* address);
+#endif
+
     dynamic_loader() = default;
 
-    MIGRAPHX_EXPORT dynamic_loader(const fs::path& p);
+    dynamic_loader(const fs::path& p);
 
-    MIGRAPHX_EXPORT dynamic_loader(const char* image, std::size_t size);
+    dynamic_loader(const char* image, std::size_t size);
 
-    MIGRAPHX_EXPORT dynamic_loader(const std::vector<char>& buffer);
+    dynamic_loader(const std::vector<char>& buffer);
 
-    MIGRAPHX_EXPORT std::shared_ptr<void> get_symbol(const std::string& name) const;
+    std::shared_ptr<void> get_symbol(const std::string& name) const;
 
     template <class F>
     std::function<F> get_function(const std::string& name) const

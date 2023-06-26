@@ -22,13 +22,7 @@
 # THE SOFTWARE.
 #####################################################################################
 
-cmake_policy(SET CMP0057 NEW)
-
-include(GenerateExportHeader)
-
-if(NOT HIP_PATH)
-    set(HIP_PATH "$ENV{HIP_PATH}")
-endif()
+include(ExportHeader)
 
 include(ROCMInstallTargets)
 include(ROCMPackageConfigHelpers)
@@ -105,13 +99,12 @@ add_library(migraphx
     value.cpp
     verify_args.cpp
 )
-
 if(WIN32)
     target_sources(migraphx PRIVATE dynamic_loader_win32.cpp)
+    target_compile_definitions(migraphx PUBLIC -D_USE_MATH_DEFINES)
 else()
     target_sources(migraphx PRIVATE dynamic_loader.cpp)
 endif()
-
 configure_file(version.h.in include/migraphx/version.h)
 rocm_set_soversion(migraphx ${MIGRAPHX_SO_VERSION})
 function(register_migraphx_ops)
@@ -241,11 +234,7 @@ register_migraphx_ops(
 )
 register_op(migraphx HEADER migraphx/op/rnn_variable_seq_lens.hpp OPERATORS op::rnn_var_sl_shift_output op::rnn_var_sl_shift_sequence)
 register_op(migraphx HEADER migraphx/builtin.hpp OPERATORS builtin::literal builtin::param builtin::returns)
-
-if(CLANG_TIDY_EXE)
-    rocm_clang_tidy_check(migraphx)
-endif()
-
+rocm_clang_tidy_check(migraphx)
 rocm_install_targets(
   TARGETS migraphx
   INCLUDE
@@ -267,65 +256,55 @@ target_link_libraries(migraphx PUBLIC Threads::Threads)
 if(NOT WIN32)
     find_package(nlohmann_json 3.8.0 REQUIRED)
 endif()
-
 target_link_libraries(migraphx PRIVATE nlohmann_json::nlohmann_json)
+migraphx_generate_export_header(migraphx)
 
-generate_export_header(migraphx
-    EXPORT_FILE_NAME
-        ${CMAKE_BINARY_DIR}/include/migraphx/export.h)
-
-target_include_directories(migraphx PRIVATE ${CMAKE_BINARY_DIR}/include)
-
-if(WIN32)
-    target_link_libraries(migraphx PRIVATE sqlite3::sqlite3 msgpackc-cxx)
-    if(CMAKE_CXX_COMPILER STREQUAL "Clang")
-        target_compile_options(migraphx PRIVATE -fdelayed-template-parsing -fms-extensions -fms-compatibility)
-    endif()
-else()
+if(NOT WIN32)
     find_package(PkgConfig)
     pkg_check_modules(SQLITE3 REQUIRED IMPORTED_TARGET sqlite3)
-    target_link_libraries(migraphx PRIVATE PkgConfig::SQLITE3)
-
-    find_package(msgpack REQUIRED)
-    target_link_libraries(migraphx PUBLIC msgpackc-cxx)
 endif()
+target_link_libraries(migraphx PRIVATE PkgConfig::SQLITE3)
 
-add_custom_target(migraphx_all_targets)
+if(NOT WIN32)
+    find_package(msgpackc-cxx QUIET)
+    if(NOT msgpackc-cxx_FOUND)
+        find_package(msgpack REQUIRED)
+    endif()
+endif()
+target_link_libraries(migraphx PRIVATE msgpackc-cxx)
+# Make this available to the tests
+target_link_libraries(migraphx INTERFACE $<BUILD_INTERFACE:msgpackc-cxx>)
+
+add_library(migraphx_all_targets INTERFACE)
 
 add_subdirectory(api)
-add_dependencies(migraphx_all_targets migraphx_c)
+target_link_libraries(migraphx_all_targets INTERFACE migraphx_c)
 
 add_subdirectory(driver)
-add_dependencies(migraphx_all_targets driver)
-
 add_subdirectory(onnx)
-add_dependencies(migraphx_all_targets migraphx_onnx)
+target_link_libraries(migraphx_all_targets INTERFACE migraphx_onnx)
 
 add_subdirectory(tf)
-add_dependencies(migraphx_all_targets migraphx_tf)
+target_link_libraries(migraphx_all_targets INTERFACE migraphx_tf)
 
-option(MIGRAPHX_ENABLE_PYTHON "Enable python bindings" ON)
-
-if(MIGRAPHX_ENABLE_PYTHON)
-    add_subdirectory(py)
-    add_dependencies(migraphx_all_targets migraphx_py)
-endif()
-
+add_subdirectory(py)
 add_subdirectory(targets/ref)
-add_dependencies(migraphx_all_targets migraphx_ref)
-
+target_link_libraries(migraphx_all_targets INTERFACE migraphx_ref)
 if(MIGRAPHX_ENABLE_CPU)
-    add_subdirectory(targets/cpu)
-    add_dependencies(migraphx_all_targets migraphx_cpu)
+add_subdirectory(targets/cpu)
+target_link_libraries(migraphx_all_targets INTERFACE migraphx_cpu)
+target_compile_definitions(migraphx_all_targets INTERFACE -DHAVE_CPU)
 endif()
 if(MIGRAPHX_ENABLE_GPU)
-    set(PACKAGE_DEPENDS PACKAGE MIOpen PACKAGE rocblas)
-    add_subdirectory(targets/gpu)
-    add_dependencies(migraphx_all_targets migraphx_gpu migraphx_gpu_driver migraphx_hiprtc_driver)
+list(APPEND PACKAGE_DEPENDS PACKAGE MIOpen PACKAGE rocblas)
+add_subdirectory(targets/gpu)
+target_link_libraries(migraphx_all_targets INTERFACE migraphx_gpu)
+target_compile_definitions(migraphx_all_targets INTERFACE -DHAVE_GPU)
 endif()
 if(MIGRAPHX_ENABLE_FPGA)
-    add_subdirectory(targets/fpga)
-    add_dependencies(migraphx_all_targets migraphx_fpga)
+add_subdirectory(targets/fpga)
+target_link_libraries(migraphx_all_targets INTERFACE migraphx_fpga)
+target_compile_definitions(migraphx_all_targets INTERFACE -DHAVE_FPGA)
 endif()
 
 if(HAVE_HALF_EXPR)

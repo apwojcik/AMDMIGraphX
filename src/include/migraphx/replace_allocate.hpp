@@ -35,12 +35,12 @@ struct module;
 /**
  *  Replace `allocate` instructions with target allocations or output parameters.
  */
-struct replace_allocate
+struct MIGRAPHX_EXPORT replace_allocate
 {
     allocation_model model;
     bool offload_copy = false;
     std::string name() const { return "replace_allocate"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

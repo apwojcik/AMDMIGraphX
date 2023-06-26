@@ -111,8 +111,7 @@ static std::vector<src_file> create_ck_headers()
     std::vector<src_file> srcs;
     std::transform(
         header_strings.begin(), header_strings.end(), std::back_inserter(srcs), [&](auto&& p) {
-            return src_file{fs::path{p.first},
-                            {p.second.data(), p.second.data() + p.second.size()}};
+            return src_file{p.first, p.second};
         });
     return srcs;
 }
@@ -428,7 +427,7 @@ struct ck_gemm_compiler : compiler<ck_gemm_compiler>
                     {
                         std::vector<shape> gemm_shapes{
                             shapes[0], shapes[1], shapes.back().with_type(shapes[0].type())};
-                        std::cout << "ck_gemm: " << to_json_string(to_value(gemm_shapes))
+                        std::cout << "gpu::ck_gemm: " << to_json_string(to_value(gemm_shapes))
                                   << std::endl;
                     }
                     m.replace_instruction(ins2, code_object, ins2->inputs());

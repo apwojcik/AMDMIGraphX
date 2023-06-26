@@ -55,19 +55,19 @@ struct onnx_options
 };
 
 /// Create a program from an onnx file
-MIGRAPHX_ONNX_EXPORT
-program parse_onnx(const std::string& name, const onnx_options& = onnx_options{});
+MIGRAPHX_ONNX_EXPORT program parse_onnx(const std::string& name,
+                                        const onnx_options& = onnx_options{});
 
 /// Create a program from an onnx buffer
-MIGRAPHX_ONNX_EXPORT
-program parse_onnx_buffer(const std::string& buffer, const onnx_options& options);
+MIGRAPHX_ONNX_EXPORT program parse_onnx_buffer(const std::string& buffer,
+                                               const onnx_options& options);
 
 /// Create a program from an onnx buffer
-MIGRAPHX_ONNX_EXPORT
-program parse_onnx_buffer(const void* data, std::size_t size, const onnx_options& options);
+MIGRAPHX_ONNX_EXPORT program parse_onnx_buffer(const void* data,
+                                               std::size_t size,
+                                               const onnx_options& options);
 
-MIGRAPHX_ONNX_EXPORT
-std::vector<std::string> get_onnx_operators();
+MIGRAPHX_ONNX_EXPORT std::vector<std::string> get_onnx_operators();
 
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

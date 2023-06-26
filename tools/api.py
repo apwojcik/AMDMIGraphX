@@ -125,7 +125,7 @@ class Type:
 
 
 header_function = Template('''
-${error_type} ${name}(${params});
+MIGRAPHX_C_EXPORT ${error_type} ${name}(${params});
 ''')
 
 function_pointer_typedef = Template('''

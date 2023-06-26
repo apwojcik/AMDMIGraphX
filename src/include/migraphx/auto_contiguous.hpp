@@ -33,10 +33,10 @@ inline namespace MIGRAPHX_INLINE_NS {
 
 struct module;
 
-struct auto_contiguous
+struct MIGRAPHX_EXPORT auto_contiguous
 {
     std::string name() const { return "auto_contiguous"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS

@@ -21,26 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-#define MIGRAPHX_C_STATIC_DEFINE
-
-#include <stdexcept>
-#include <numeric>
-
 #include <hip/hip_runtime_api.h>
+#include <migraphx/migraphx.h>
 #include <migraphx/migraphx.hpp>
-
+#include <numeric>
+#include <stdexcept>
 #include "test.hpp"
 
 #define MIGRAPHX_HIP_ASSERT(x) (EXPECT(x == hipSuccess))
 
 struct half_copy_host final : migraphx::experimental_custom_op_base
 {
-    [[nodiscard]] std::string name() const override { return "half_copy_host"; }
+    virtual std::string name() const override { return "half_copy_host"; }
 
-    [[nodiscard]] bool runs_on_offload_target() const override { return false; }
+    virtual bool runs_on_offload_target() const override { return false; }
 
-    [[nodiscard]] migraphx::argument
+    virtual migraphx::argument
     compute(migraphx::context ctx, migraphx::shape, migraphx::arguments inputs) const override
     {
         // This custom op simply sets first half size_bytes of the input to 0, and rest of the half
@@ -65,7 +61,7 @@ struct half_copy_host final : migraphx::experimental_custom_op_base
         return inputs[1];
     }
 
-    [[nodiscard]] migraphx::shape compute_shape(migraphx::shapes inputs) const override
+    virtual migraphx::shape compute_shape(migraphx::shapes inputs) const override
     {
         if(not inputs[0].standard() or not inputs[1].standard())
         {
@@ -81,11 +77,11 @@ struct half_copy_host final : migraphx::experimental_custom_op_base
 
 struct half_copy_device final : migraphx::experimental_custom_op_base
 {
-    [[nodiscard]] std::string name() const override { return "half_copy_device"; }
+    virtual std::string name() const override { return "half_copy_device"; }
 
-    [[nodiscard]] bool runs_on_offload_target() const override { return true; }
+    virtual bool runs_on_offload_target() const override { return true; }
 
-    [[nodiscard]] migraphx::argument
+    virtual migraphx::argument
     compute(migraphx::context ctx, migraphx::shape, migraphx::arguments inputs) const override
     {
         // This custom op simply sets first half size_bytes of the input to 0, and rest of the half
@@ -108,7 +104,7 @@ struct half_copy_device final : migraphx::experimental_custom_op_base
         return inputs[1];
     }
 
-    [[nodiscard]] migraphx::shape compute_shape(migraphx::shapes inputs) const override
+    virtual migraphx::shape compute_shape(migraphx::shapes inputs) const override
     {
         if(not inputs[0].standard() or not inputs[1].standard())
         {
@@ -125,11 +121,11 @@ struct half_copy_device final : migraphx::experimental_custom_op_base
 // overwrites input buffer
 struct half_copy_device_same_buffer final : migraphx::experimental_custom_op_base
 {
-    [[nodiscard]] std::string name() const override { return "half_copy_device_same_buffer"; }
+    virtual std::string name() const override { return "half_copy_device_same_buffer"; }
 
-    [[nodiscard]] bool runs_on_offload_target() const override { return true; }
+    virtual bool runs_on_offload_target() const override { return true; }
 
-    [[nodiscard]] migraphx::argument
+    virtual migraphx::argument
     compute(migraphx::context ctx, migraphx::shape, migraphx::arguments inputs) const override
     {
         // This custom op simply sets first half size_bytes of the input 0, and rest of the half
@@ -145,7 +141,7 @@ struct half_copy_device_same_buffer final : migraphx::experimental_custom_op_bas
         return inputs[0];
     }
 
-    [[nodiscard]] migraphx::shape compute_shape(migraphx::shapes inputs) const override
+    virtual migraphx::shape compute_shape(migraphx::shapes inputs) const override
     {
         if(not inputs[0].standard())
         {
@@ -225,15 +221,14 @@ TEST_CASE(half_copy_custom_op_test)
 
 struct stride_two final : migraphx::experimental_custom_op_base
 {
-    [[nodiscard]] std::string name() const override { return "stride_two"; }
-
-    [[nodiscard]] migraphx::argument
+    virtual std::string name() const override { return "stride_two"; }
+    virtual migraphx::argument
     compute(migraphx::context, migraphx::shape out_shape, migraphx::arguments inputs) const override
     {
         return {out_shape, inputs[0].data()};
     }
 
-    [[nodiscard]] migraphx::shape compute_shape(migraphx::shapes inputs) const override
+    virtual migraphx::shape compute_shape(migraphx::shapes inputs) const override
     {
         if(inputs.size() != 1)
         {
@@ -249,13 +244,14 @@ struct stride_two final : migraphx::experimental_custom_op_base
         std::vector<size_t> strides = input_s.strides();
         std::vector<size_t> new_strides;
         std::for_each(dims.begin(), dims.end(), [&](auto i) { new_dims.push_back(i / 2); });
-        std::for_each(strides.begin(), strides.end(), [&](auto i) { new_strides.push_back(i * 2); });
+        std::for_each(
+            strides.begin(), strides.end(), [&](auto i) { new_strides.push_back(i * 2); });
         migraphx::shape output_shape{input_s.type(), new_dims, new_strides};
         return output_shape;
     }
 
-    [[nodiscard]] bool runs_on_offload_target() const override { return true; }
-    [[nodiscard]] std::vector<size_t> output_alias(migraphx::shapes) const override { return {0}; };
+    virtual bool runs_on_offload_target() const override { return true; }
+    virtual std::vector<size_t> output_alias(migraphx::shapes) const override { return {0}; };
 };
 
 TEST_CASE(stride_two_custom_op_test)

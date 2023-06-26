@@ -24,13 +24,9 @@
 #ifndef MIGRAPHX_GUARD_MIGRAPHLIB_MODULE_HPP
 #define MIGRAPHX_GUARD_MIGRAPHLIB_MODULE_HPP
 
-#include <algorithm>
-#include <iostream>
 #include <list>
 #include <unordered_set>
 #include <unordered_map>
-
-#include <migraphx/config.hpp>
 #include <migraphx/operation.hpp>
 #include <migraphx/literal.hpp>
 #include <migraphx/builtin.hpp>
@@ -39,6 +35,9 @@
 #include <migraphx/module_ref.hpp>
 #include <migraphx/compile_options.hpp>
 #include <migraphx/env.hpp>
+#include <migraphx/config.hpp>
+#include <algorithm>
+#include <iostream>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
@@ -53,25 +52,25 @@ using ins_dep_map   = std::unordered_map<instruction_ref, std::unordered_set<ins
 /**
  * @brief Stores the instruction stream
  */
-struct module
+struct MIGRAPHX_EXPORT module
 {
-    MIGRAPHX_EXPORT module(const std::string& name = "");
+    module(const std::string& name = "");
 
     // move constructor
-    MIGRAPHX_EXPORT module(module&&) noexcept;
+    module(module&&) noexcept;
 
     // copy constructor
-    MIGRAPHX_EXPORT module(const module&);
+    module(const module&);
 
     // copy assignment operator
-    MIGRAPHX_EXPORT module& operator=(module);
+    module& operator=(module);
 
-    MIGRAPHX_EXPORT ~module() noexcept;
+    ~module() noexcept;
 
-    MIGRAPHX_EXPORT std::string name() const;
+    std::string name() const;
 
-    MIGRAPHX_EXPORT bool bypass() const;
-    MIGRAPHX_EXPORT void set_bypass(bool b = true);
+    bool bypass() const;
+    void set_bypass(bool b = true);
 
     template <class... Ts, MIGRAPHX_REQUIRES(std::is_same<Ts, instruction_ref>{}...)>
     instruction_ref add_instruction(operation op, Ts... args)
@@ -79,9 +78,9 @@ struct module
         return add_instruction(op, {args...});
     }
 
-    MIGRAPHX_EXPORT instruction_ref add_instruction(const operation& op, std::vector<instruction_ref> args);
+    instruction_ref add_instruction(const operation& op, std::vector<instruction_ref> args);
 
-    MIGRAPHX_EXPORT instruction_ref add_instruction(const operation& op,
+    instruction_ref add_instruction(const operation& op,
                                     std::vector<instruction_ref> args,
                                     std::vector<module_ref> module_args);
 
@@ -90,10 +89,10 @@ struct module
     {
         return insert_instruction(ins, op, {args...});
     }
-    MIGRAPHX_EXPORT instruction_ref
+    instruction_ref
     insert_instruction(instruction_ref ins, const operation& op, std::vector<instruction_ref> args);
 
-    MIGRAPHX_EXPORT instruction_ref insert_instruction(instruction_ref ins,
+    instruction_ref insert_instruction(instruction_ref ins,
                                        const operation& op,
                                        std::vector<instruction_ref> args,
                                        std::vector<module_ref> module_args);
@@ -103,47 +102,47 @@ struct module
     {
         return replace_instruction(ins, op, {args...});
     }
-    MIGRAPHX_EXPORT instruction_ref replace_instruction(instruction_ref ins,
+    instruction_ref replace_instruction(instruction_ref ins,
                                         const operation& op,
                                         std::vector<instruction_ref> args) MIGRAPHX_TIDY_CONST;
 
-    MIGRAPHX_EXPORT instruction_ref replace_instruction(instruction_ref ins,
+    instruction_ref replace_instruction(instruction_ref ins,
                                         const operation& op,
                                         std::vector<instruction_ref> args,
                                         std::vector<module_ref> module_args) MIGRAPHX_TIDY_CONST;
 
-    MIGRAPHX_EXPORT instruction_ref replace_instruction(instruction_ref ins, instruction_ref rep);
+    instruction_ref replace_instruction(instruction_ref ins, instruction_ref rep);
 
-    MIGRAPHX_EXPORT instruction_ref remove_instruction(instruction_ref ins);
-    MIGRAPHX_EXPORT instruction_ref remove_instructions(instruction_ref first, instruction_ref last);
+    instruction_ref remove_instruction(instruction_ref ins);
+    instruction_ref remove_instructions(instruction_ref first, instruction_ref last);
 
-    MIGRAPHX_EXPORT instruction_ref move_instruction(instruction_ref src, instruction_ref dst);
-    MIGRAPHX_EXPORT instruction_ref move_instructions(instruction_ref src, instruction_ref dst);
+    instruction_ref move_instruction(instruction_ref src, instruction_ref dst);
+    instruction_ref move_instructions(instruction_ref src, instruction_ref dst);
 
-    MIGRAPHX_EXPORT std::vector<instruction_ref>
+    std::vector<instruction_ref>
     add_instructions(const std::vector<instruction_ref>& instructions,
                      std::unordered_map<instruction_ref, instruction_ref> map_ins = {});
 
-    MIGRAPHX_EXPORT std::vector<instruction_ref>
+    std::vector<instruction_ref>
     add_instructions(const_module_ref m,
                      std::unordered_map<instruction_ref, instruction_ref> map_ins = {});
 
-    MIGRAPHX_EXPORT std::vector<instruction_ref>
+    std::vector<instruction_ref>
     add_instructions(instruction_ref start,
                      instruction_ref last,
                      std::unordered_map<instruction_ref, instruction_ref> map_ins = {});
 
-    MIGRAPHX_EXPORT std::vector<instruction_ref>
+    std::vector<instruction_ref>
     insert_instructions(instruction_ref ins,
                         const std::vector<instruction_ref>& instructions,
                         std::unordered_map<instruction_ref, instruction_ref> map_ins = {});
 
-    MIGRAPHX_EXPORT std::vector<instruction_ref>
+    std::vector<instruction_ref>
     insert_instructions(instruction_ref ins,
                         const_module_ref m,
                         std::unordered_map<instruction_ref, instruction_ref> map_ins = {});
 
-    MIGRAPHX_EXPORT std::vector<instruction_ref>
+    std::vector<instruction_ref>
     insert_instructions(instruction_ref ins,
                         instruction_ref start,
                         instruction_ref last,
@@ -155,76 +154,76 @@ struct module
         return add_literal(literal{std::forward<Ts>(xs)...});
     }
 
-    MIGRAPHX_EXPORT instruction_ref add_literal(literal l);
+    instruction_ref add_literal(literal l);
 
-    MIGRAPHX_EXPORT instruction_ref add_outline(const shape& s);
+    instruction_ref add_outline(const shape& s);
 
-    MIGRAPHX_EXPORT instruction_ref add_parameter(std::string name, shape s);
+    instruction_ref add_parameter(std::string name, shape s);
 
-    MIGRAPHX_EXPORT instruction_ref add_return(std::vector<instruction_ref> args);
+    instruction_ref add_return(std::vector<instruction_ref> args);
 
-    MIGRAPHX_EXPORT instruction_ref replace_return(std::vector<instruction_ref> args);
+    instruction_ref replace_return(std::vector<instruction_ref> args);
 
-    MIGRAPHX_EXPORT instruction_ref insert_literal(instruction_ref ins, literal l);
+    instruction_ref insert_literal(instruction_ref ins, literal l);
 
-    MIGRAPHX_EXPORT instruction_ref insert_parameter(instruction_ref ins, std::string name, shape s);
+    instruction_ref insert_parameter(instruction_ref ins, std::string name, shape s);
 
-    MIGRAPHX_EXPORT std::vector<std::string> get_parameter_names() const;
+    std::vector<std::string> get_parameter_names() const;
 
-    MIGRAPHX_EXPORT shape get_parameter_shape(std::string name) const;
+    shape get_parameter_shape(std::string name) const;
 
-    MIGRAPHX_EXPORT instruction_ref get_parameter(std::string name) const;
+    instruction_ref get_parameter(std::string name) const;
 
-    MIGRAPHX_EXPORT std::unordered_map<std::string, shape> get_parameter_shapes() const;
+    std::unordered_map<std::string, shape> get_parameter_shapes() const;
 
-    MIGRAPHX_EXPORT bool has_instruction(instruction_ref ins) const;
+    bool has_instruction(instruction_ref ins) const;
 
-    MIGRAPHX_EXPORT std::vector<instruction_ref> get_returns() const;
+    std::vector<instruction_ref> get_returns() const;
 
-    MIGRAPHX_EXPORT std::size_t size() const;
-    MIGRAPHX_EXPORT instruction_ref begin() const;
-    MIGRAPHX_EXPORT instruction_ref end() const;
+    std::size_t size() const;
+    instruction_ref begin() const;
+    instruction_ref end() const;
 
-    MIGRAPHX_EXPORT std::vector<shape> get_output_shapes() const;
+    std::vector<shape> get_output_shapes() const;
 
-    MIGRAPHX_EXPORT instruction_ref validate() const;
-    MIGRAPHX_EXPORT instruction_ref find_dangling_reference() const;
+    instruction_ref validate() const;
+    instruction_ref find_dangling_reference() const;
 
-    MIGRAPHX_EXPORT void finalize(context& ctx);
+    void finalize(context& ctx);
 
-    MIGRAPHX_EXPORT void debug_print() const;
-    MIGRAPHX_EXPORT void debug_print(instruction_ref ins) const;
-    MIGRAPHX_EXPORT void debug_print(instruction_ref ins,
+    void debug_print() const;
+    void debug_print(instruction_ref ins) const;
+    void debug_print(instruction_ref ins,
                      std::unordered_map<instruction_ref, std::string>& names) const;
-    MIGRAPHX_EXPORT void debug_print(const std::vector<instruction_ref>& inss) const;
+    void debug_print(const std::vector<instruction_ref>& inss) const;
 
-    MIGRAPHX_EXPORT std::unordered_map<instruction_ref, std::string> print(
+    std::unordered_map<instruction_ref, std::string> print(
         const std::function<void(
             instruction_ref, const std::unordered_map<instruction_ref, std::string>&)>& print_func,
         std::unordered_map<instruction_ref, std::string> names) const;
-    MIGRAPHX_EXPORT void print(const std::function<void(instruction_ref,
+    void print(const std::function<void(instruction_ref,
                                         const std::unordered_map<instruction_ref, std::string>&)>&
                    print_func) const;
 
-    MIGRAPHX_EXPORT void print_graph(std::ostream& os, bool brief = false) const;
+    void print_graph(std::ostream& os, bool brief = false) const;
 
-    MIGRAPHX_EXPORT void print_py(std::ostream& os) const;
-    MIGRAPHX_EXPORT std::unordered_map<instruction_ref, std::string>
+    void print_py(std::ostream& os) const;
+    std::unordered_map<instruction_ref, std::string>
     print_py(std::ostream& os,
              const std::string& mname,
              std::unordered_map<instruction_ref, std::string> names) const;
 
-    MIGRAPHX_EXPORT void print_cpp(std::ostream& os) const;
-    MIGRAPHX_EXPORT std::unordered_map<instruction_ref, std::string>
+    void print_cpp(std::ostream& os) const;
+    std::unordered_map<instruction_ref, std::string>
     print_cpp(std::ostream& os,
               const std::string& mname,
               std::unordered_map<instruction_ref, std::string> names) const;
 
-    MIGRAPHX_EXPORT void annotate(std::ostream& os, std::function<void(instruction_ref)> a) const;
+    void annotate(std::ostream& os, std::function<void(instruction_ref)> a) const;
 
-    [[nodiscard]] MIGRAPHX_EXPORT std::vector<module_ref> get_sub_modules(bool shallow = false) const;
-    MIGRAPHX_EXPORT module& sort();
-    [[nodiscard]] MIGRAPHX_EXPORT ins_dep_map calc_implicit_deps() const;
+    std::vector<module_ref> get_sub_modules(bool shallow = false) const;
+    module& sort();
+    ins_dep_map calc_implicit_deps() const;
 
     MIGRAPHX_EXPORT friend std::ostream& operator<<(std::ostream& os, const module& m);
     MIGRAPHX_EXPORT friend bool operator==(const module& x, const module& y);

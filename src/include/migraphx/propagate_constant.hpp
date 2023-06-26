@@ -35,10 +35,10 @@ struct module;
 /**
  * Replace instructions which take all literals with a literal of the computation.
  */
-struct propagate_constant
+struct MIGRAPHX_EXPORT propagate_constant
 {
     std::string name() const { return "propagate_constant"; }
-    MIGRAPHX_EXPORT void apply(module& m) const;
+    void apply(module& m) const;
 };
 
 } // namespace MIGRAPHX_INLINE_NS
