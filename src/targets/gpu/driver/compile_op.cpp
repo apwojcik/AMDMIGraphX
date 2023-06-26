@@ -26,7 +26,7 @@
 #define MIGRAPHX_GPU_STATIC_DEFINE
 
 #include <migraphx/gpu/driver/action.hpp>
-#include <migraphx/gpu/driver/perf.hpp>
+#include <migraphx/gpu/time_op.hpp>
 #include <migraphx/gpu/compiler.hpp>
 #include <migraphx/gpu/context.hpp>
 

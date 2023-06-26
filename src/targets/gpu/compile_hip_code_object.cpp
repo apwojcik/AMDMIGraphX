@@ -21,12 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-#include <migraphx/gpu/context.hpp>
-#include <migraphx/gpu/code_object_op.hpp>
-#include <migraphx/gpu/device_name.hpp>
 #include <migraphx/gpu/compile_hip_code_object.hpp>
 #include <migraphx/gpu/compile_hip.hpp>
+#include <migraphx/gpu/code_object_op.hpp>
+#include <migraphx/gpu/context.hpp>
+#include <migraphx/gpu/device_name.hpp>
 #include <migraphx/context.hpp>
 #include <migraphx_kernels.hpp>
 #include <migraphx/stringutils.hpp>
@@ -162,11 +161,22 @@ operation compile_hip_code_object(const std::string& content, hip_compile_option
     assert(not options.inputs.empty());
     assert(options.inputs.size() == options.virtual_inputs.size() or
            options.virtual_inputs.empty());
-    std::vector<src_file> srcs{ migraphx_kernels() };
-    srcs.emplace_back("main.cpp", content);
-    auto args_hpp = generate_args_hpp(options.virtual_inputs.empty() ? options.inputs : options.virtual_inputs);
-    srcs.emplace_back("args.hpp", args_hpp);
-
+    std::vector<src_file> srcs = options.additional_src_files;
+    std::transform(migraphx_kernels().begin(),
+                   migraphx_kernels().end(),
+                   std::back_inserter(srcs),
+                   [](auto&& p) {
+                       auto&& name = p.first;
+                       auto&& c    = p.second;
+                       auto path   = fs::path{"migraphx"} / "kernels" / name;
+                       return src_file{path, c};
+                   });
+    srcs.push_back(src_file{fs::path{"main.cpp"},
+                            std::make_pair(content.data(), content.data() + content.size())});
+    auto args_hpp =
+        generate_args_hpp(options.virtual_inputs.empty() ? options.inputs : options.virtual_inputs);
+    srcs.push_back(src_file{fs::path{"args.hpp"},
+                            std::make_pair(args_hpp.data(), args_hpp.data() + args_hpp.size())});
     options.params += " -DMIGRAPHX_NGLOBAL=" + std::to_string(options.global);
     options.params += " -DMIGRAPHX_NLOCAL=" + std::to_string(options.local);
     options.params += " " + join_strings(compiler_warnings(), " ");

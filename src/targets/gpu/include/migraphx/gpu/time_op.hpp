@@ -21,53 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include <migraphx/gpu/compiler.hpp>
-#include <utility>
+#ifndef MIGRAPHX_GUARD_GPU_DRIVER_PERF_HPP
+#define MIGRAPHX_GUARD_GPU_DRIVER_PERF_HPP
+
+#include <migraphx/config.hpp>
+#include <migraphx/gpu/context.hpp>
+#include <migraphx/operation.hpp>
 
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
 namespace gpu {
 
-namespace {
-struct compiler_handle
-{
-    compiler_compile compile;
-    compiler_compile_op compile_op;
-    compiler_tuning_config get_tuning_config;
-};
-} // namespace
-
-auto& compiler_map()
-{
-    static std::unordered_map<std::string, compiler_handle> m; // NOLINT
-    return m;
-}
-
-void register_compiler(const std::string& name,
-                       compiler_compile c,
-                       compiler_compile_op cop,
-                       compiler_tuning_config ctg)
-{
-    compiler_map()[name] = {std::move(c), std::move(cop), std::move(ctg)};
-}
-
-bool has_compiler_for(const std::string& name) { return compiler_map().count(name) > 0; }
-compiler_replace
-compile(context& ctx, instruction_ref ins, const operation& op, const value& solution)
-{
-    return compiler_map().at(op.name()).compile(ctx, ins, op, solution);
-}
-operation
-compile_op(const std::string& name, context& ctx, const std::vector<shape>& inputs, const value& v)
-{
-    return compiler_map().at(name).compile_op(ctx, inputs, v);
-}
-
-optional<tuning_config> get_tuning_config(context& ctx, instruction_ref ins, const operation& op)
-{
-    return compiler_map().at(op.name()).get_tuning_config(ctx, ins, op);
-}
+std::pair<double, double>
+time_op(context& ictx, operation op, const std::vector<shape>& inputs, int n = 100);
 
 } // namespace gpu
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx
+#endif // MIGRAPHX_GUARD_GPU_DRIVER_PERF_HPP

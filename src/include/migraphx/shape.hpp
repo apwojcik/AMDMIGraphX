@@ -43,10 +43,6 @@ inline namespace MIGRAPHX_INLINE_NS {
 struct value;
 struct shape_impl;
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4244)
-#endif
-
 struct shape
 {
 
@@ -101,46 +97,46 @@ struct shape
             return pack(f(self.min, "min"), f(self.max, "max"), f(self.optimals, "optimals"));
         }
 
-        MIGRAPHX_EXPORT bool is_fixed() const;
-        MIGRAPHX_EXPORT bool has_optimal() const;
+        bool is_fixed() const;
+        bool has_optimal() const;
 
-        MIGRAPHX_EXPORT friend bool operator==(const dynamic_dimension& x, const dynamic_dimension& y);
-        MIGRAPHX_EXPORT friend bool operator!=(const dynamic_dimension& x, const dynamic_dimension& y);
-        MIGRAPHX_EXPORT friend std::ostream& operator<<(std::ostream& os, const dynamic_dimension& x);
+        friend bool operator==(const dynamic_dimension& x, const dynamic_dimension& y);
+        friend bool operator!=(const dynamic_dimension& x, const dynamic_dimension& y);
+        friend std::ostream& operator<<(std::ostream& os, const dynamic_dimension& x);
 
         // compare to fixed std::size_t dimension
-        MIGRAPHX_EXPORT friend bool operator==(const dynamic_dimension& x, const std::size_t& y);
-        MIGRAPHX_EXPORT friend bool operator==(const std::size_t& x, const dynamic_dimension& y);
-        MIGRAPHX_EXPORT friend bool operator!=(const dynamic_dimension& x, const std::size_t& y);
-        MIGRAPHX_EXPORT friend bool operator!=(const std::size_t& x, const dynamic_dimension& y);
+        friend bool operator==(const dynamic_dimension& x, const std::size_t& y);
+        friend bool operator==(const std::size_t& x, const dynamic_dimension& y);
+        friend bool operator!=(const dynamic_dimension& x, const std::size_t& y);
+        friend bool operator!=(const std::size_t& x, const dynamic_dimension& y);
 
         // add and subtract fixed std::size_t dimension
-        MIGRAPHX_EXPORT dynamic_dimension& operator+=(const std::size_t& x);
-        MIGRAPHX_EXPORT dynamic_dimension& operator-=(const std::size_t& x);
-        MIGRAPHX_EXPORT friend dynamic_dimension operator+(const dynamic_dimension& x, const std::size_t& y);
-        MIGRAPHX_EXPORT friend dynamic_dimension operator+(const std::size_t& x, const dynamic_dimension& y);
-        MIGRAPHX_EXPORT friend dynamic_dimension operator-(const dynamic_dimension& x, const std::size_t& y);
+        dynamic_dimension& operator+=(const std::size_t& x);
+        dynamic_dimension& operator-=(const std::size_t& x);
+        friend dynamic_dimension operator+(const dynamic_dimension& x, const std::size_t& y);
+        friend dynamic_dimension operator+(const std::size_t& x, const dynamic_dimension& y);
+        friend dynamic_dimension operator-(const dynamic_dimension& x, const std::size_t& y);
     };
 
-    MIGRAPHX_EXPORT static const std::vector<type_t>& types();
+    static const std::vector<type_t>& types();
 
-    MIGRAPHX_EXPORT static std::string name(type_t t);
-    MIGRAPHX_EXPORT static std::string cpp_type(type_t t);
+    static std::string name(type_t t);
+    static std::string cpp_type(type_t t);
 
-    MIGRAPHX_EXPORT shape();
-    MIGRAPHX_EXPORT shape(type_t t);
-    MIGRAPHX_EXPORT shape(type_t t, std::vector<std::size_t> l);
-    MIGRAPHX_EXPORT shape(type_t t, std::vector<std::size_t> l, std::vector<std::size_t> s);
+    shape();
+    shape(type_t t);
+    shape(type_t t, std::vector<std::size_t> l);
+    shape(type_t t, std::vector<std::size_t> l, std::vector<std::size_t> s);
 
     // Force all calls of the format `shape( type_t, { size_t compatibles } )` to map to
     // shape(type_t, std::vector<std::size_t> l)
-    MIGRAPHX_EXPORT shape(type_t t, std::initializer_list<std::size_t> d);
+    shape(type_t t, std::initializer_list<std::size_t> d);
 
-    MIGRAPHX_EXPORT shape(type_t t, std::vector<dynamic_dimension> dims);
+    shape(type_t t, std::vector<dynamic_dimension> dims);
 
     // Construct a dynamic shape from vectors of mins, maxes, and optimals.
     // optimals_list is a vector of optimals that corresponds to each min and max.
-    MIGRAPHX_EXPORT shape(type_t t,
+    shape(type_t t,
           std::vector<std::size_t> mins,
           std::vector<std::size_t> maxes,
           std::vector<std::set<std::size_t>> optimals_list);
@@ -158,61 +154,81 @@ struct shape
     {
     }
 
-    MIGRAPHX_EXPORT shape(const std::vector<shape>& subs);
+    shape(const std::vector<shape>& subs);
 
-    static MIGRAPHX_EXPORT shape
+    /**
+     * Creates an output shape with dimensions equal to the input lengths and strides determined
+     * by the permutation argument such that find_permutation() of the output shape returns the
+     * inputted permuation.
+     *
+     * 2D example:
+     *   parameters:
+     *     l = [2, 3], perm = [1, 0]
+     *   therefore:
+     *     "original" shape = {lens = [3, 2], strides = [2, 1]}
+     *     output_shape = {lens = [2, 3], strides = [1, 2]
+     *
+     * 3D example:
+     *   parameters:
+     *     l = [2, 3, 4], perm = [1, 2, 0]
+     *   therefore:
+     *     "original" shape = {lens = [3, 4, 2], strides = [8, 2, 1]}
+     *     output_shape = {lens = [2, 3, 4], strides = [1, 8, 2]}
+     */
+    static shape
     from_permutation(type_t t, const std::vector<std::size_t>& l, const std::vector<int64_t>& perm);
-    MIGRAPHX_EXPORT type_t type() const;
-    MIGRAPHX_EXPORT const std::vector<std::size_t>& lens() const;
-    MIGRAPHX_EXPORT const std::vector<std::size_t>& strides() const;
+
+    type_t type() const;
+    const std::vector<std::size_t>& lens() const;
+    const std::vector<std::size_t>& strides() const;
 
     /*!
-     * The number of dimensions in the shape.
+     * The number of dimensions in the shape, either static or dynamic.
      * Same as the number of indices required to get a data value.
      */
-    MIGRAPHX_EXPORT std::size_t ndim() const;
+    std::size_t ndim() const;
 
     /*!
      * Return the number of elements in the tensor.
      */
-    MIGRAPHX_EXPORT std::size_t elements() const;
+    std::size_t elements() const;
 
     /*!
      * Return the number of total bytes used for storage of the tensor data; includes subshapes.
      * For dynamic shape, returns the maximum number of bytes presuming a packed shape.
      */
-    MIGRAPHX_EXPORT std::size_t bytes() const;
+    std::size_t bytes() const;
 
     /*!
      * Return the size of the type of the main shape.
      * Returns 0 if there are subshapes.
      */
-    MIGRAPHX_EXPORT std::size_t type_size() const;
+    std::size_t type_size() const;
 
-    MIGRAPHX_EXPORT const std::vector<dynamic_dimension>& dyn_dims() const;
+    const std::vector<dynamic_dimension>& dyn_dims() const;
 
     /*!
      * Minimum lengths for dynamic shape.
      * lens() for static shape.
      */
-    MIGRAPHX_EXPORT std::vector<std::size_t> min_lens() const;
+    std::vector<std::size_t> min_lens() const;
 
     /*!
      * Maximum lengths for dynamic shape.
      * lens() for static shape.
      */
-    MIGRAPHX_EXPORT std::vector<std::size_t> max_lens() const;
+    std::vector<std::size_t> max_lens() const;
 
     /*!
      * Optimum lengths for dynamic shape.
      * Empty for static shape.
      */
-    MIGRAPHX_EXPORT const std::vector<std::set<std::size_t>> opt_lens() const;
+    std::vector<std::set<std::size_t>> opt_lens() const;
 
     /// Map multiple indices to space index
-    MIGRAPHX_EXPORT std::size_t index(std::initializer_list<std::size_t> l) const;
+    std::size_t index(std::initializer_list<std::size_t> l) const;
     /// Map multiple indices to space index
-    MIGRAPHX_EXPORT std::size_t index(const std::vector<std::size_t>& l) const;
+    std::size_t index(const std::vector<std::size_t>& l) const;
 
     /// Map multiple indices from a range of iterator to a space index
     template <class Iterator>
@@ -224,55 +240,55 @@ struct shape
     }
 
     /// Map element index to space index
-    MIGRAPHX_EXPORT std::size_t index(std::size_t i) const;
+    std::size_t index(std::size_t i) const;
 
     /// Map element index to multi-dimensional index
-    MIGRAPHX_EXPORT std::vector<std::size_t> multi(std::size_t i) const;
+    std::vector<std::size_t> multi(std::size_t idx) const;
 
     /// Map element index to multi-dimensional index and put them them into location provided by
     /// pointers
-    MIGRAPHX_EXPORT void multi_copy(std::size_t i, std::size_t* start, const std::size_t* end) const;
+    void multi_copy(std::size_t idx, std::size_t* start, const std::size_t* end) const;
 
     /// Returns true if the shape is packed (number of elements and buffer size the same) with
     /// no padding
-    MIGRAPHX_EXPORT bool packed() const;
+    bool packed() const;
 
     /// Returns true is the shape has been transposed. That is the strides are not in descending
     /// order
-    MIGRAPHX_EXPORT bool transposed() const;
+    bool transposed() const;
 
     /// Returns true if the shape is broadcasting a dimension. That is, one of the strides are zero
-    MIGRAPHX_EXPORT bool broadcasted() const;
+    bool broadcasted() const;
 
     /// Returns true if the shape is in its standard format. That is, the shape is both packed and
     /// not transposed.
-    MIGRAPHX_EXPORT bool standard() const;
+    bool standard() const;
 
     /// Returns true if all strides are equal to 0 (scalar tensor)
-    MIGRAPHX_EXPORT bool scalar() const;
+    bool scalar() const;
 
     /// Return true if the shape is dynamic
-    MIGRAPHX_EXPORT bool dynamic() const;
+    bool dynamic() const;
 
     /// Return true if this shape or any of the sub_shapes are dynamic
-    MIGRAPHX_EXPORT bool any_of_dynamic() const;
+    bool any_of_dynamic() const;
 
-    MIGRAPHX_EXPORT shape normalize_standard() const;
+    shape normalize_standard() const;
 
-    MIGRAPHX_EXPORT shape with_lens(type_t t, const std::vector<std::size_t>& l) const;
-    MIGRAPHX_EXPORT shape with_lens(const std::vector<std::size_t>& l) const;
+    shape with_lens(type_t t, const std::vector<std::size_t>& l) const;
+    shape with_lens(const std::vector<std::size_t>& l) const;
 
-    MIGRAPHX_EXPORT shape with_type(type_t t) const;
+    shape with_type(type_t t) const;
 
     // convert the shape to an equivalent dynamic shape with empty optimals
-    MIGRAPHX_EXPORT shape to_dynamic() const;
+    shape to_dynamic() const;
 
     // convert the shape to a static one setting any non-fixed dynamic_dimensions to x
-    MIGRAPHX_EXPORT shape to_static(std::size_t x) const;
+    shape to_static(std::size_t x) const;
 
-    MIGRAPHX_EXPORT friend bool operator==(const shape& x, const shape& y);
-    MIGRAPHX_EXPORT friend bool operator!=(const shape& x, const shape& y);
-    MIGRAPHX_EXPORT friend std::ostream& operator<<(std::ostream& os, const shape& x);
+    friend bool operator==(const shape& x, const shape& y);
+    friend bool operator!=(const shape& x, const shape& y);
+    friend std::ostream& operator<<(std::ostream& os, const shape& x);
 
     template <class T>
     struct as
@@ -282,6 +298,8 @@ struct shape
         type max() const { return std::numeric_limits<type>::max(); }
 
         type min() const { return std::numeric_limits<type>::lowest(); }
+
+        type nan() const { return std::numeric_limits<type>::quiet_NaN(); }
 
         template <class U>
         type operator()(U u) const
@@ -361,25 +379,25 @@ struct shape
 #undef MIGRAPHX_SHAPE_GENERATE_VISITOR_ALL
     }
 
-    MIGRAPHX_EXPORT std::string type_string() const;
-    MIGRAPHX_EXPORT static type_t parse_type(const std::string& s);
+    std::string type_string() const;
+    static type_t parse_type(const std::string& s);
 
-    MIGRAPHX_EXPORT const std::vector<shape>& sub_shapes() const;
+    const std::vector<shape>& sub_shapes() const;
 
     /*!
      * Returns the number of elements in the data buffer.
      * For a dynamic shape, returns the maximum number of elements of the data buffer and assumes it
      * is packed.
      */
-    MIGRAPHX_EXPORT std::size_t element_space() const;
+    std::size_t element_space() const;
 
     private:
     shape(std::shared_ptr<shape_impl> pimpl);
     std::shared_ptr<const shape_impl> impl;
 };
 
-MIGRAPHX_EXPORT void migraphx_to_value(value& v, const shape& s);
-MIGRAPHX_EXPORT void migraphx_from_value(const value& v, shape& s);
+void migraphx_to_value(value& v, const shape& s);
+void migraphx_from_value(const value& v, shape& s);
 
 } // namespace MIGRAPHX_INLINE_NS
 } // namespace migraphx

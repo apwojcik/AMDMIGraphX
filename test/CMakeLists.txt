@@ -24,37 +24,36 @@
 
 cmake_policy(SET CMP0057 NEW)
 
-if(MIGRAPHX_ENABLE_GPU)
-    find_package(hip REQUIRED)
-    find_package(miopen REQUIRED)
-endif()
+include(CTest)
 
+find_package(Threads REQUIRED)
 include(ProcessorCount)
 ProcessorCount(N)
-
 set(CTEST_PARALLEL_LEVEL ${N} CACHE STRING "CTest parallel level")
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -j ${CTEST_PARALLEL_LEVEL} -C ${CMAKE_CFG_INTDIR} --timeout 5000)
 add_custom_target(tests)
 
-if(WIN32)
-    set(MIGRAPHX_TEST_GDB Off CACHE BOOL "")
+find_program(MIGRAPHX_GDB gdb)
+
+if(MIGRAPHX_GDB)
+    set(MIGRAPHX_TEST_GDB On CACHE BOOL "")
 else()
-    find_program(MIGRAPHX_GDB gdb)
-    if(MIGRAPHX_GDB)
-        set(MIGRAPHX_TEST_GDB On CACHE BOOL "")
-    else()
-        set(MIGRAPHX_TEST_GDB Off CACHE BOOL "")
-    endif()
+    set(MIGRAPHX_TEST_GDB Off CACHE BOOL "")
 endif()
+
+set(SKIP_TESTS)
 
 function(add_test_command NAME EXE)
     if(NAME IN_LIST SKIP_TESTS)
         add_test(NAME ${NAME} COMMAND echo skipped)
         set_tests_properties(${NAME} PROPERTIES DISABLED On)
     elseif(WIN32)
+        set(WINPATH)
+
         foreach(PATH ${CMAKE_FIND_ROOT_PATH})
             list(APPEND WINPATH ${PATH}/bin)
         endforeach()
+
         file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/test_${NAME}.cmd"
             CONTENT "set PATH=${WINPATH};%PATH%
                     %1 ${ARGN}")
@@ -101,91 +100,74 @@ endfunction()
 
 function(add_test_executable TEST_NAME)
     add_executable(${TEST_NAME} EXCLUDE_FROM_ALL ${ARGN})
+    target_link_libraries(${TEST_NAME} ${CMAKE_THREAD_LIBS_INIT})
+
+    # Cmake does not add flags correctly for gcc
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        set_target_properties(${TEST_NAME} PROPERTIES COMPILE_FLAGS -pthread LINK_FLAGS -pthread)
+    endif()
     set(TEST_COMMAND ${TEST_NAME})
     add_test_command(${TEST_NAME} ${TEST_COMMAND})
     add_dependencies(tests ${TEST_NAME})
     add_dependencies(check ${TEST_NAME})
-    target_compile_features(${TEST_NAME} PRIVATE cxx_std_17)
-    target_link_libraries(${TEST_NAME} PRIVATE Threads::Threads migraphx migraphx_onnx migraphx_ref msgpackc-cxx)
-    target_include_directories(${TEST_NAME} PUBLIC include ${CMAKE_BINARY_DIR}/include)
-endfunction()
+    target_link_libraries(${TEST_NAME} migraphx migraphx_onnx migraphx_ref)
+    target_include_directories(${TEST_NAME} PUBLIC include)
+endfunction(add_test_executable)
 
 file(GLOB TESTS ${CONFIGURE_DEPENDS} *.cpp)
 
 foreach(TEST ${TESTS})
     get_filename_component(BASE_NAME ${TEST} NAME_WE)
     add_test_executable(test_${BASE_NAME} ${TEST})
-    if(CLANG_TIDY_EXE)
-        rocm_clang_tidy_check(test_${BASE_NAME})
-    endif()
+    rocm_clang_tidy_check(test_${BASE_NAME})
 endforeach()
 
 if(MIGRAPHX_ENABLE_GPU)
-    set(GPU_TESTS
-        gpu/adjust_allocation.cpp
-        gpu/context_serialize.cpp
-        gpu/hip.cpp
-        gpu/jit.cpp
-        gpu/literal.cpp
-        gpu/manage_host_buffer.cpp
-        gpu/mlir.cpp
-        gpu/pack_args.cpp
-        gpu/pack_int8_args.cpp
-        gpu/quantization.cpp
-        gpu/stream_sync.cpp)
+    # gpu tests
+    file(GLOB GPU_TESTS ${CONFIGURE_DEPENDS} gpu/*.cpp)
 
     foreach(TEST ${GPU_TESTS})
         get_filename_component(BASE_NAME ${TEST} NAME_WE)
         add_test_executable(test_gpu_${BASE_NAME} ${TEST})
-        if(CLANG_TIDY_EXE)
-            rocm_clang_tidy_check(test_gpu_${BASE_NAME})
-        endif()
-        set_tests_properties(test_gpu_${BASE_NAME} PROPERTIES COST 10 RESOURCE_LOCK gpu)
-        target_link_libraries(test_gpu_${BASE_NAME} PRIVATE hip::device MIOpen migraphx_gpu)
-        if(WIN32)
-            target_include_directories(test_gpu_${BASE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/targets/gpu/kernels)
-        else()
-            target_link_libraries(test_gpu_${BASE_NAME} PRIVATE migraphx_kernels)
-        endif()
+        rocm_clang_tidy_check(test_gpu_${BASE_NAME})
+        set_tests_properties(test_gpu_${BASE_NAME} PROPERTIES
+            COST 10
+            RESOURCE_LOCK gpu
+        )
         if(MIGRAPHX_USE_HIPRTC)
-            target_compile_definitions(test_gpu_${BASE_NAME} PUBLIC -DMIGRAPHX_USE_HIPRTC)
+        target_compile_definitions(test_gpu_${BASE_NAME} PUBLIC -DMIGRAPHX_USE_HIPRTC)
         endif()
-        target_include_directories(test_gpu_${BASE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
+        target_link_libraries(test_gpu_${BASE_NAME} migraphx_gpu migraphx_kernels)
     endforeach()
 endif()
 
 if(MIGRAPHX_ENABLE_FPGA)
-    set(FPGA_TESTS
-            fpga/get_target_assignments.cpp
-            fpga/test_compile.cpp)
+    # fpga tests
+    file(GLOB FPGA_TESTS ${CONFIGURE_DEPENDS} fpga/*.cpp)
 
     foreach(TEST ${FPGA_TESTS})
         get_filename_component(BASE_NAME ${TEST} NAME_WE)
         add_test_executable(test_fpga_${BASE_NAME} ${TEST})
-        if(CLANG_TIDY_EXE)
-            rocm_clang_tidy_check(test_fpga_${BASE_NAME})
-        endif()
-        set_tests_properties(test_fpga_${BASE_NAME} PROPERTIES COST 10 RESOURCE_LOCK fpga)
-        target_link_libraries(test_fpga_${BASE_NAME} PRIVATE migraphx_fpga)
+        rocm_clang_tidy_check(test_fpga_${BASE_NAME})
+        set_tests_properties(test_fpga_${BASE_NAME} PROPERTIES
+            COST 10
+            RESOURCE_LOCK fpga
+        )
+        target_link_libraries(test_fpga_${BASE_NAME} migraphx_fpga)
     endforeach()
 endif()
 
 # Onnx test
 set(TEST_ONNX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/onnx)
-set(ONNX_TESTS
-    onnx/onnx_rnn_test.cpp
-    onnx/onnx_test.cpp
-    onnx/verify_onnx.cpp)
+file(GLOB ONNX_TESTS ${TEST_ONNX_DIR}/*.cpp)
 
 foreach(ONNX_TEST ${ONNX_TESTS})
     get_filename_component(BASE_NAME ${ONNX_TEST} NAME_WE)
     set(TEST_NAME test_${BASE_NAME})
     add_executable(${TEST_NAME} ${ONNX_TEST})
-    if(CLANG_TIDY_EXE)
-        rocm_clang_tidy_check(${TEST_NAME})
-    endif()
+    rocm_clang_tidy_check(${TEST_NAME})
     target_link_libraries(${TEST_NAME} migraphx_onnx migraphx_ref)
-    target_include_directories(${TEST_NAME} PUBLIC include ${CMAKE_BINARY_DIR}/include)
+    target_include_directories(${TEST_NAME} PUBLIC include)
     add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${TEST_NAME}> WORKING_DIRECTORY ${TEST_ONNX_DIR})
     add_dependencies(tests ${TEST_NAME})
     add_dependencies(check ${TEST_NAME})
@@ -194,11 +176,9 @@ endforeach()
 # tf test
 set(TEST_TF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tf)
 add_executable(test_tf tf/tf_test.cpp)
-if(CLANG_TIDY_EXE)
-    rocm_clang_tidy_check(test_tf)
-endif()
-target_link_libraries(test_tf PRIVATE migraphx_tf migraphx_ref)
-target_include_directories(test_tf PUBLIC include ${CMAKE_BINARY_DIR}/include)
+rocm_clang_tidy_check(test_tf)
+target_link_libraries(test_tf migraphx_tf)
+target_include_directories(test_tf PUBLIC include)
 add_test(NAME test_tf COMMAND $<TARGET_FILE:test_tf> WORKING_DIRECTORY ${TEST_TF_DIR})
 add_dependencies(tests test_tf)
 add_dependencies(check test_tf)
@@ -210,9 +190,24 @@ if(MIGRAPHX_ENABLE_PYTHON)
     add_subdirectory(py)
 endif()
 
-if(MIGRAPHX_ENABLE_CPU)
-    find_package(OpenMP REQUIRED COMPONENTS CXX)
+# multitarget test
+if(MIGRAPHX_ENABLE_GPU AND MIGRAPHX_ENABLE_CPU AND MIGRAPHX_ENABLE_FPGA)
+    set(TEST_MULTI_TARGET_DIR ${CMAKE_CURRENT_SOURCE_DIR}/multi_target)
+    file(GLOB MULTI_TARGET_TESTS ${CONFIGURE_DEPENDS} ${TEST_MULTI_TARGET_DIR}/*.cpp)
+
+    foreach(MULTI_TARGET_TEST ${MULTI_TARGET_TESTS})
+        get_filename_component(BASE_NAME ${MULTI_TARGET_TEST} NAME_WE)
+        set(TEST_NAME test_${BASE_NAME})
+        add_executable(${TEST_NAME} ${MULTI_TARGET_TEST})
+        rocm_clang_tidy_check(${TEST_NAME})
+        target_link_libraries(${TEST_NAME} migraphx migraphx_onnx migraphx_tf migraphx_all_targets)
+        target_include_directories(${TEST_NAME} PUBLIC include)
+        add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${TEST_NAME}> WORKING_DIRECTORY ${TEST_MULTI_TARGET_DIR})
+        add_dependencies(tests ${TEST_NAME})
+        add_dependencies(check ${TEST_NAME})
+    endforeach()
 endif()
+
 
 function(test_header NAME HEADER)
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/header-main-include-${NAME}.cpp
@@ -225,20 +220,6 @@ function(test_header NAME HEADER)
         ${CMAKE_CURRENT_BINARY_DIR}/header-main-include-${NAME}.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/header-static-include-${NAME}.cpp
     )
-    target_include_directories(${NAME} PRIVATE ${CMAKE_BINARY_DIR}/include)
-    if(MIGRAPHX_ENABLE_GPU)
-        target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/targets/gpu/include)
-        target_link_libraries(${NAME} PRIVATE hip::device MIOpen)
-    endif()
-    if(MIGRAPHX_ENABLE_CPU)
-        target_compile_options(${NAME} PRIVATE -Wno-source-uses-openmp -Wno-ignored-attributes)
-        target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/targets/cpu/include)
-        target_link_libraries(${NAME} PRIVATE OpenMP::OpenMP_CXX)
-        if(MIGRAPHX_ENABLE_ZENDNN)
-        else()
-            target_link_libraries(${NAME} PRIVATE dnnl)
-        endif()
-    endif()
 endfunction()
 
 function(test_headers PREFIX)
@@ -249,6 +230,7 @@ function(test_headers PREFIX)
         string(MAKE_C_IDENTIFIER ${HEADER_REL} TEST_NAME)
         get_filename_component(BASE_NAME ${HEADER} NAME_WE)
         test_header(header_${TEST_NAME} ${PREFIX}/${BASE_NAME}.hpp)
+        target_link_libraries(header_${TEST_NAME} migraphx_all_targets)
     endforeach()
 endfunction()
 
@@ -264,4 +246,5 @@ endif()
 if(MIGRAPHX_ENABLE_FPGA)
     test_headers(migraphx/fpga ${CMAKE_SOURCE_DIR}/src/targets/fpga/include/migraphx/fpga/*.hpp)
 endif()
+
 

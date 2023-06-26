@@ -21,14 +21,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #####################################################################################
+find_program(EMBED_LD ld)
+find_program(EMBED_OBJCOPY objcopy)
 
-if(COMMAND generate_embed_source)
-    # Embed.cmake has already been included.
-    return()
+if(LINUX)
+    option(EMBED_USE_LD "Use ld to embed data files" ON)
+else()
+    option(EMBED_USE_LD "Use ld to embed data files" OFF)
 endif()
 
-find_program(EMBED_LD NAMES ld)
-find_program(EMBED_OBJCOPY NAMES objcopy)
+function(wrap_string)
+    set(options)
+    set(oneValueArgs VARIABLE AT_COLUMN)
+    set(multiValueArgs)
+    cmake_parse_arguments(PARSE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    cmake_parse_arguments(WRAP_STRING "${options}" "${oneValueArgs}" "" ${ARGN})
+
+    string(LENGTH ${${PARSE_VARIABLE}} string_length)
+    math(EXPR offset "0")
+
+    while(string_length GREATER 0)
+
+        if(string_length GREATER ${PARSE_AT_COLUMN})
+            math(EXPR length "${PARSE_AT_COLUMN}")
+        else()
+            math(EXPR length "${string_length}")
+        endif()
+
+        string(SUBSTRING ${${PARSE_VARIABLE}} ${offset} ${length} line)
+        set(lines "${lines}\n${line}")
+
+        math(EXPR string_length "${string_length} - ${length}")
+        math(EXPR offset "${offset} + ${length}")
+    endwhile()
+
+    set(${PARSE_VARIABLE} "${lines}" PARENT_SCOPE)
+endfunction()
 
 function(generate_embed_source EMBED_NAME)
     set(options)
@@ -51,78 +79,98 @@ function(generate_embed_source EMBED_NAME)
         list(GET PARSE_SYMBOLS ${idx} SYMBOL)
         list(GET PARSE_OBJECTS ${idx} OBJECT)
         set(START_SYMBOL "_binary_${SYMBOL}_start")
-        set(SIZE_SYMBOL "_binary_${SYMBOL}_size")
-        string(APPEND EXTERNS "
-extern \"C\" const char* ${START_SYMBOL};
-extern \"C\" const size_t ${SIZE_SYMBOL};
-")
+        set(END_SYMBOL "_binary_${SYMBOL}_end")
+        if(EMBED_USE_LD)
+            string(APPEND EXTERNS "
+                extern const char ${START_SYMBOL}[];
+                extern const char ${END_SYMBOL}[];
+            ")
+        else()
+            string(APPEND EXTERNS "
+                extern const char ${START_SYMBOL}[];
+                extern const char* ${END_SYMBOL};
+            ")
+        endif()
+
         # TODO: Should use NAME_WLE
         get_filename_component(BASE_NAME "${OBJECT}" NAME)
-        string(REGEX REPLACE ".[A-Za-z0-9_]$" "" BASE_NAME ${BASE_NAME})
+        string(REGEX REPLACE ".[A-Za-z0-9_]+$" "" BASE_NAME ${BASE_NAME})
+
         string(APPEND INIT_KERNELS "
-        { \"migraphx/kernels/${BASE_NAME}\", { ${START_SYMBOL}, ${SIZE_SYMBOL} }},")
+            { \"${BASE_NAME}\", { ${START_SYMBOL}, ${END_SYMBOL}} },
+        ")
     endforeach()
 
     file(WRITE "${PARSE_HEADER}" "
-#include \"migraphx/compile_src.hpp\"
-
-namespace migraphx {
-inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu {
-    std::vector<src_file> ${EMBED_NAME}();
-} // namespace gpu
-} // namespace MIGRAPHX_INLINE_NS
-} // namespace migraphx
+#include <unordered_map>
+#include <string>
+#include <utility>
+const std::unordered_map<std::string, std::pair<const char*,const char*>>& ${EMBED_NAME}();
 ")
 
     file(WRITE "${PARSE_SRC}" "
-#include \"${EMBED_NAME}.hpp\"
-
-namespace migraphx {
-inline namespace MIGRAPHX_INLINE_NS {
-namespace gpu {
-
+#include <${EMBED_NAME}.hpp>
 ${EXTERNS}
-std::vector<src_file> ${EMBED_NAME}()
+const std::unordered_map<std::string, std::pair<const char*,const char*>>& ${EMBED_NAME}()
 {
-    static std::vector<src_file> _kernels_ = {${INIT_KERNELS}};
-    return _kernels_;
+    static const std::unordered_map<std::string, std::pair<const char*,const char*>> result = {${INIT_KERNELS}};
+    return result;
 }
-
-} // namespace gpu
-} // namespace MIGRAPHX_INLINE_NS
-} // namespace migraphx
-
 ")
 endfunction()
 
 function(embed_file OUTPUT_FILE OUTPUT_SYMBOL FILE)
+    set(WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     # Glob is used to compute the relative path
-    file(GLOB FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${FILE})
+    file(GLOB FILES RELATIVE ${WORKING_DIRECTORY} ${FILE})
     foreach(REL_FILE ${FILES})
         string(MAKE_C_IDENTIFIER "${REL_FILE}" SYMBOL)
         get_filename_component(OUTPUT_FILE_DIR "${REL_FILE}" DIRECTORY)
         file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_FILE_DIR}")
-        set(OUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/${REL_FILE}${CMAKE_C_OUTPUT_EXTENSION}")
+        if(EMBED_USE_LD)
+            set(OUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/${REL_FILE}.o")
+        else()
+            set(OUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/${REL_FILE}.cpp")
+        endif()
         set(${OUTPUT_SYMBOL} ${SYMBOL} PARENT_SCOPE)
         set(${OUTPUT_FILE} "${OUT_FILE}" PARENT_SCOPE)
-        add_custom_command(
-            OUTPUT ${OUT_FILE}
-            COMMAND ${EMBED_LD} -r -o ${OUT_FILE} -z noexecstack --format=binary ${REL_FILE}
-            COMMAND ${EMBED_OBJCOPY} --rename-section .data=.rodata,alloc,load,readonly,data,contents ${OUT_FILE}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            DEPENDS ${FILE}
-            VERBATIM)
+        if(EMBED_USE_LD)
+            add_custom_command(
+                OUTPUT "${OUT_FILE}"
+                COMMAND ${EMBED_LD} -r -o "${OUT_FILE}" -z noexecstack --format=binary "${REL_FILE}" 
+                COMMAND ${EMBED_OBJCOPY} --rename-section .data=.rodata,alloc,load,readonly,data,contents "${OUT_FILE}"
+                WORKING_DIRECTORY ${WORKING_DIRECTORY}
+                DEPENDS ${FILE}
+                VERBATIM
+            )
+        else()
+            set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${FILE})
+            # reads source file contents as hex string
+            file(READ ${FILE} HEX_STRING HEX)
+            # wraps the hex string into multiple lines
+            wrap_string(VARIABLE HEX_STRING AT_COLUMN 80)
+            # adds '0x' prefix and comma suffix before and after every byte respectively
+            string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1, " ARRAY_VALUES ${HEX_STRING})
+            # removes trailing comma
+            string(REGEX REPLACE ", $" "" ARRAY_VALUES ${ARRAY_VALUES})
+            file(WRITE "${OUT_FILE}" "
+                extern const char _binary_${SYMBOL}_start[] = { ${ARRAY_VALUES} };
+                extern const char* _binary_${SYMBOL}_end = _binary_${SYMBOL}_start + sizeof(_binary_${SYMBOL}_start);
+            \n")
+        endif()
     endforeach()
 endfunction()
 
 function(add_embed_library EMBED_NAME)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/embed)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/embed/${EMBED_NAME})
     set(EMBED_DIR ${CMAKE_CURRENT_BINARY_DIR}/embed/${EMBED_NAME})
-    file(MAKE_DIRECTORY ${EMBED_DIR})
     set(SRC_FILE "${EMBED_DIR}/${EMBED_NAME}.cpp")
     set(HEADER_FILE "${EMBED_DIR}/include/${EMBED_NAME}.hpp")
-    message(STATUS "Embedding kernel files: ${ARGN}")
-    add_library(${EMBED_NAME} STATIC)
+    set(WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set(OUTPUT_FILES)
+    set(SYMBOLS)
+    message(STATUS "Embedding files")
     foreach(FILE ${ARGN})
         embed_file(OUTPUT_FILE OUTPUT_SYMBOL ${FILE})
         list(APPEND OUTPUT_FILES ${OUTPUT_FILE})
@@ -130,8 +178,8 @@ function(add_embed_library EMBED_NAME)
     endforeach()
     message(STATUS "Generating embedding library ${EMBED_NAME}")
     generate_embed_source(${EMBED_NAME} SRC ${SRC_FILE} HEADER ${HEADER_FILE} OBJECTS ${OUTPUT_FILES} SYMBOLS ${SYMBOLS})
-    target_sources(${EMBED_NAME} PRIVATE ${OUTPUT_FILES} ${SRC_FILE})
-    target_include_directories(${EMBED_NAME} PUBLIC ${EMBED_DIR}/include)
-    target_compile_options(${EMBED_NAME} PRIVATE -Wno-reserved-identifier)
-    set_target_properties(${EMBED_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    add_library(${EMBED_NAME} STATIC ${OUTPUT_FILES} "${SRC_FILE}")
+    target_include_directories(${EMBED_NAME} PUBLIC "${EMBED_DIR}/include")
+    target_compile_options(${EMBED_NAME} PRIVATE -Wno-reserved-identifier -Wno-extern-initializer -Wno-missing-variable-declarations)
+    set_target_properties(${EMBED_NAME} PROPERTIES POSITION_INDEPENDENT_CODE On)
 endfunction()
