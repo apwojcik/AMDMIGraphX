@@ -296,12 +296,6 @@ find_program(NMAKE_EXECUTABLE NAMES nmake.exe REQUIRED HINTS "${NMAKE_DIR}")
 
 include(ExternalProject)
 
-file(TO_NATIVE_PATH ${CMAKE_BINARY_DIR} __native_binary_dir)
-
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
-
 ExternalProject_Add(
         sqlite3
         GIT_REPOSITORY https://github.com/sqlite/sqlite.git
@@ -309,15 +303,17 @@ ExternalProject_Add(
         GIT_SHALLOW true
         UPDATE_DISCONNECTED true
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND ${NMAKE_EXECUTABLE} /f ..\\sqlite3\\Makefile.msc TOP=..\\sqlite3
-        INSTALL_COMMAND cmd.exe /c copy /y sqlite3.dll "${__native_binary_dir}\\bin" && copy /y sqlite3.lib "${__native_binary_dir}\\lib" && for %I in (sqlite3.h sqlite3ext.h) do copy /y %I "${__native_binary_dir}\\include")
+        BUILD_COMMAND ${NMAKE_EXECUTABLE} /f ..\\sqlite3\\Makefile.msc NO_TCL=1 TOP=..\\sqlite3 libsqlite3.lib
+        INSTALL_COMMAND "")
+
+ExternalProject_Get_Property(sqlite3 BINARY_DIR)
 
 # For compatibility with PkgConfig on Linux
 add_library(PkgConfig::SQLITE3 INTERFACE IMPORTED GLOBAL)
 add_dependencies(PkgConfig::SQLITE3 sqlite3)
-target_link_directories(PkgConfig::SQLITE3 INTERFACE ${CMAKE_BINARY_DIR}/lib)
-target_link_libraries(PkgConfig::SQLITE3 INTERFACE sqlite3.lib)
-target_include_directories(PkgConfig::SQLITE3 INTERFACE ${CMAKE_BINARY_DIR}/include)
+target_link_directories(PkgConfig::SQLITE3 INTERFACE ${BINARY_DIR})
+target_link_libraries(PkgConfig::SQLITE3 INTERFACE libsqlite3.lib)
+target_include_directories(PkgConfig::SQLITE3 INTERFACE ${BINARY_DIR})
     
 macro(install)
     _install(${ARGN})
