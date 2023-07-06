@@ -303,7 +303,7 @@ ExternalProject_Add(
         GIT_SHALLOW true
         UPDATE_DISCONNECTED true
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND ${NMAKE_EXECUTABLE} /f ..\\sqlite3\\Makefile.msc NO_TCL=1 TOP=..\\sqlite3 libsqlite3.lib
+        BUILD_COMMAND ${NMAKE_EXECUTABLE} /f ..\\sqlite3\\Makefile.msc USE_AMALGAMATION=1 NO_TCL=1 TOP=..\\sqlite3 libsqlite3.lib
         INSTALL_COMMAND "")
 
 ExternalProject_Get_Property(sqlite3 BINARY_DIR)
@@ -322,3 +322,4 @@ endmacro()
 macro(export)
     _export(${ARGN})
 endmacro()
+

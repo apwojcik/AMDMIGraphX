@@ -101,7 +101,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(EnableCompilerWarnings)
-include(ClangTidy)
+include(ROCMClangTidy)
 if(CMAKE_CXX_COMPILER MATCHES ".*clang\\+\\+.*")
     set(MIGRAPHX_TIDY_ERRORS ERRORS * -readability-inconsistent-declaration-parameter-name)
 # Enable tidy on hip
@@ -211,7 +211,7 @@ rocm_enable_clang_tidy(
         -analyzer-config cfg-lifetime=true
         -analyzer-config cfg-scopes=true
 )
-include(CppCheck)
+include(ROCMCppCheck)
 rocm_enable_cppcheck(
     CHECKS
         warning

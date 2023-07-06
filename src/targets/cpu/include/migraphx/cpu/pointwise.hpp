@@ -25,7 +25,6 @@
 #define MIGRAPHX_GUARD_AMDMIGRAPHX_CPU_POINTWISE_HPP
 
 #include <array>
-
 #include <migraphx/config.hpp>
 #include <migraphx/context.hpp>
 #include <migraphx/check_shapes.hpp>

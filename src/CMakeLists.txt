@@ -279,14 +279,9 @@ target_link_libraries(migraphx INTERFACE $<BUILD_INTERFACE:msgpackc-cxx>)
 add_library(migraphx_all_targets INTERFACE)
 
 add_subdirectory(api)
-target_link_libraries(migraphx_all_targets INTERFACE migraphx_c)
-
 add_subdirectory(driver)
 add_subdirectory(onnx)
-target_link_libraries(migraphx_all_targets INTERFACE migraphx_onnx)
-
 add_subdirectory(tf)
-target_link_libraries(migraphx_all_targets INTERFACE migraphx_tf)
 
 add_subdirectory(py)
 add_subdirectory(targets/ref)

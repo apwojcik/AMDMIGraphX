@@ -35,7 +35,7 @@ inline namespace MIGRAPHX_INLINE_NS {
 
 MIGRAPHX_EXPORT operation make_op(const std::string& name);
 MIGRAPHX_EXPORT operation make_op(const std::string& name,
-                  const std::initializer_list<std::pair<std::string, value>>& v);
+                                  const std::initializer_list<std::pair<std::string, value>>& v);
 MIGRAPHX_EXPORT operation make_op_from_value(const std::string& name, const value& v);
 
 // A template overload is added for migraphx::value so the initializer_list
