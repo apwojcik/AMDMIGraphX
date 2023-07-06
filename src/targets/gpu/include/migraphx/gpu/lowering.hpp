@@ -29,7 +29,7 @@
 namespace migraphx {
 inline namespace MIGRAPHX_INLINE_NS {
 
-struct module;
+struct module_pass_manager;
 
 namespace gpu {
 
@@ -44,7 +44,7 @@ struct MIGRAPHX_GPU_EXPORT lowering
     context* ctx;
     bool offload_copy;
     std::string name() const { return "gpu::lowering"; }
-    void apply(module& m) const;
+    void apply(module_pass_manager& mpm) const;
 };
 
 } // namespace gpu
