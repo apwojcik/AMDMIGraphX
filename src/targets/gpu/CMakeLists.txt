@@ -287,6 +287,7 @@ else()
 
     # Skip library paths since hip will incorrectly treat it as a source file
     string(APPEND HIP_COMPILER_FLAGS " ")
+
     if(WIN32)
         string(REPLACE "\\" "/" HIP_COMPILER_FLAGS "${HIP_COMPILER_FLAGS}")
     endif()
